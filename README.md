@@ -1,6 +1,7 @@
 # Rail Connectors
 
 ![CI](https://github.com/ai-crypto-onramp/rail-connectors/actions/workflows/ci.yml/badge.svg)
+[![codecov](https://codecov.io/gh/ai-crypto-onramp/rail-connectors/branch/main/graph/badge.svg)](https://codecov.io/gh/ai-crypto-onramp/rail-connectors)
 
 Fiat rail adapters that expose a common interface for card, ACH, SEPA, PIX, and UPI rails.
 
