@@ -3,5 +3,5 @@ bin/
 vendor/
 .env
 *.log
-*.testrail-connectors
+/rail-connectors
 coverage.out
