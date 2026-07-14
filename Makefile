@@ -4,13 +4,13 @@ build:
 	go build -o bin/server ./cmd/rail-connectors
 
 test:
-	go test ./... -race -coverprofile=coverage.out -coverpkg=./...
+	go test ./cmd/... ./internal/... -race -coverprofile=coverage.out -coverpkg=./cmd/...,./internal/...
 
 run:
-	go run .
+	go run ./cmd/rail-connectors
 
 lint:
-	go vet ./...
+	golangci-lint run
 
 docker-build:
 	docker build -t ai-crypto-onramp/rail-connectors .
