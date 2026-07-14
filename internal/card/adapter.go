@@ -34,14 +34,14 @@ type Config struct {
 
 // Connector implements rail.Connector for the card rail.
 type Connector struct {
-	cfg        Config
-	processor  Processor
-	procName   string
-	store      *store.Store
-	audit      audit.Sink
-	log        *slog.Logger
-	authLat    *metrics.Histogram
-	capLat     *metrics.Histogram
+	cfg       Config
+	processor Processor
+	procName  string
+	store     *store.Store
+	audit     audit.Sink
+	log       *slog.Logger
+	authLat   *metrics.Histogram
+	capLat    *metrics.Histogram
 }
 
 var (

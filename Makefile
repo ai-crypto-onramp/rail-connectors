@@ -1,4 +1,4 @@
-.PHONY: build test run lint cover docker-build docker-run clean
+.PHONY: build test run lint fmt-check cover docker-build docker-run clean
 
 build:
 	go build -o bin/rail-connectors ./cmd/rail-connectors
@@ -11,6 +11,9 @@ run:
 
 lint:
 	golangci-lint run
+
+fmt-check:
+	@out=$$(gofmt -l . 2>/dev/null); if [ -n "$$out" ]; then echo "gofmt would reformat:"; echo "$$out"; exit 1; fi
 
 cover: test
 	go tool cover -func=coverage.out | tail -1

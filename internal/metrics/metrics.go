@@ -29,6 +29,12 @@ func NewRegistry() *Registry {
 // metrics at package init time.
 var Default = NewRegistry()
 
+func init() {
+	// Register a baseline counter so the /metrics endpoint always has
+	// content even before any adapter is loaded.
+	Default.RegisterCounter("rail_build_info", "rail-connectors build info")
+}
+
 // RegisterCounter registers a counter; duplicate names return the existing
 // counter (so multiple init() calls are safe).
 func (r *Registry) RegisterCounter(name, help string) *Counter {

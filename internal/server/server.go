@@ -13,6 +13,7 @@ import (
 
 	"github.com/ai-crypto-onramp/rail-connectors/internal/audit"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/dummy"
+	"github.com/ai-crypto-onramp/rail-connectors/internal/metrics"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/rail"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/settlement"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/store"
@@ -91,6 +92,7 @@ func (s *Service) Mux() http.Handler {
 	mux.HandleFunc("POST /v1/refund/", s.refund)
 	mux.HandleFunc("GET /v1/status/", s.status)
 	mux.HandleFunc("POST /webhooks/", s.webhook)
+	mux.HandleFunc("/metrics", s.metrics)
 	return mux
 }
 
@@ -99,6 +101,12 @@ func (s *Service) SetReady(b bool) { s.ready = b }
 
 func (s *Service) healthz(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+func (s *Service) metrics(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(metrics.Default.Render()))
 }
 
 func (s *Service) readyz(w http.ResponseWriter, r *http.Request) {

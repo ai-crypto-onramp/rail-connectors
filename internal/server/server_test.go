@@ -418,3 +418,22 @@ func TestNewDefaults(t *testing.T) {
 		t.Fatalf("default rail wrong: %q", svc.cfg.Rail)
 	}
 }
+
+func TestMetricsEndpoint(t *testing.T) {
+	t.Parallel()
+	svc, _, _ := newTestService(t)
+	rec := doRequest(t, svc, http.MethodGet, "/metrics", nil, "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("code = %d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "# TYPE") {
+		t.Fatalf("missing TYPE in metrics output: %s", body)
+	}
+	if !strings.Contains(body, "rail_") {
+		t.Fatalf("missing rail_ metrics: %s", body)
+	}
+	if !strings.Contains(rec.Header().Get("Content-Type"), "text/plain") {
+		t.Fatalf("content-type = %q", rec.Header().Get("Content-Type"))
+	}
+}

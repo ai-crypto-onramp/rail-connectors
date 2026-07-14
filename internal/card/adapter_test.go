@@ -165,10 +165,10 @@ func newStripeDeclineAdapter(t *testing.T, decline string) (*Connector, *httptes
 		w.WriteHeader(http.StatusPaymentRequired)
 		body, _ := json.Marshal(map[string]any{
 			"error": map[string]any{
-				"type":        "card_error",
-				"code":        "card_declined",
+				"type":         "card_error",
+				"code":         "card_declined",
 				"decline_code": decline,
-				"message":     "declined",
+				"message":      "declined",
 			},
 		})
 		_, _ = w.Write(body)

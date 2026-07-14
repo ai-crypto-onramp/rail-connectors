@@ -53,17 +53,17 @@ to a configurable card processor (Stripe or Adyen, selected via
 
 ### Tasks
 
-- [ ] Add `internal/card/adapter.go` implementing `RailConnector`.
-- [ ] Add `internal/card/stripe/` client: token-based auth, payment intents,
+- [x] Add `internal/card/adapter.go` implementing `RailConnector`.
+- [x] Add `internal/card/stripe/` client: token-based auth, payment intents,
       captures, refunds, payment status retrieval.
-- [ ] Add `internal/card/adyen/` client with the equivalent operations against
+- [x] Add `internal/card/adyen/` client with the equivalent operations against
       Adyen's `/payments`, `/payments/{id}/captures`, `/payments/{id}/refunds`,
       `/payments/{id}` endpoints.
-- [ ] Map processor decline codes onto the normalized error taxonomy in
+- [x] Map processor decline codes onto the normalized error taxonomy in
       `internal/card/errors.go`.
-- [ ] Persist one row per outbound call in `rail_requests` (status,
+- [x] Persist one row per outbound call in `rail_requests` (status,
       `idempotency_key`, `rail_ref`, `error_code`).
-- [ ] Emit structured logs and Prometheus `rail_authorize_latency` /
+- [x] Emit structured logs and Prometheus `rail_authorize_latency` /
       `rail_capture_latency` metrics.
 
 ### Acceptance criteria
@@ -85,16 +85,16 @@ common interface.
 
 ### Tasks
 
-- [ ] Add `internal/ach/adapter.go` implementing `RailConnector`.
-- [ ] Add `internal/ach/nacha/` encoder for file header, batch header, entry
+- [x] Add `internal/ach/adapter.go` implementing `RailConnector`.
+- [x] Add `internal/ach/nacha/` encoder for file header, batch header, entry
       detail, batch control, and file control records (PPD debits).
-- [ ] Add `internal/ach/bankapi/` client submitting NACHA files and querying
+- [x] Add `internal/ach/bankapi/` client submitting NACHA files and querying
       batch status against `RAIL_ACH_PARTNER_URL`.
-- [ ] Implement `Authorize` as an ACH pre-note, `Capture` as batch submission,
+- [x] Implement `Authorize` as an ACH pre-note, `Capture` as batch submission,
       `Refund` as a reversing entry, `GetStatus` as batch status polling.
-- [ ] Map ACH return codes (R01 NSF, R02 closed account, R10 customer advice,
+- [x] Map ACH return codes (R01 NSF, R02 closed account, R10 customer advice,
       etc.) onto the normalized taxonomy in `internal/ach/errors.go`.
-- [ ] Persist `rail_requests` rows and emit `rail_authorize_latency` /
+- [x] Persist `rail_requests` rows and emit `rail_authorize_latency` /
       `rail_capture_latency` metrics.
 
 ### Acceptance criteria
@@ -115,17 +115,17 @@ settlement/debit reconciliation through the common interface.
 
 ### Tasks
 
-- [ ] Add `internal/sepa/adapter.go` implementing `RailConnector`.
-- [ ] Add `internal/sepa/iso20022/` builders for `pain.001.001.09` payment
+- [x] Add `internal/sepa/adapter.go` implementing `RailConnector`.
+- [x] Add `internal/sepa/iso20022/` builders for `pain.001.001.09` payment
       initiation messages.
-- [ ] Add `internal/sepa/gateway/` client using mTLS (`RAIL_SEPA_MTLS_CERT`)
+- [x] Add `internal/sepa/gateway/` client using mTLS (`RAIL_SEPA_MTLS_CERT`)
       for `pain.001` submission and `pain.002` status polling.
-- [ ] Implement `Authorize` as `pain.001` submission, `Capture` as the gateway
+- [x] Implement `Authorize` as `pain.001` submission, `Capture` as the gateway
       confirmation, `Refund` as a reverse `pain.001`, `GetStatus` as
       `pain.002` polling.
-- [ ] Map SEPA reason codes (`AC01`, `AM04`, `NOAS`, etc.) onto the normalized
+- [x] Map SEPA reason codes (`AC01`, `AM04`, `NOAS`, etc.) onto the normalized
       taxonomy in `internal/sepa/errors.go`.
-- [ ] Persist `rail_requests` and emit metrics.
+- [x] Persist `rail_requests` and emit metrics.
 
 ### Acceptance criteria
 
@@ -145,14 +145,14 @@ initiation, status, and refund through the common interface.
 
 ### Tasks
 
-- [ ] Add `internal/pix/adapter.go` implementing `RailConnector`.
-- [ ] Add `internal/pix/spi/` client for DICT key resolution and payment
+- [x] Add `internal/pix/adapter.go` implementing `RailConnector`.
+- [x] Add `internal/pix/spi/` client for DICT key resolution and payment
       endpoints (`/v1/pix/payments`, status, refund).
-- [ ] Implement `Authorize`/`Capture` as a single instant payment, `Refund` as
+- [x] Implement `Authorize`/`Capture` as a single instant payment, `Refund` as
       a PIX refund, `GetStatus` as payment status.
-- [ ] Map PIX return reasons onto the normalized taxonomy in
+- [x] Map PIX return reasons onto the normalized taxonomy in
       `internal/pix/errors.go`.
-- [ ] Persist `rail_requests` and emit metrics.
+- [x] Persist `rail_requests` and emit metrics.
 
 ### Acceptance criteria
 
@@ -169,15 +169,15 @@ payment status, refund, and chargeback flows through the common interface.
 
 ### Tasks
 
-- [ ] Add `internal/upi/adapter.go` implementing `RailConnector`.
-- [ ] Add `internal/upi/npci/` client for UPI Collect request, status, refund,
+- [x] Add `internal/upi/adapter.go` implementing `RailConnector`.
+- [x] Add `internal/upi/npci/` client for UPI Collect request, status, refund,
       and dispute endpoints.
-- [ ] Implement `Authorize` as UPI Collect initiation, `Capture` as collect
+- [x] Implement `Authorize` as UPI Collect initiation, `Capture` as collect
       confirmation, `Refund` as UPI refund, `Chargeback` as dispute recording,
       `GetStatus` as collect status.
-- [ ] Map NPCI response codes (`00`, `ZP`, `ZD`, etc.) onto the normalized
+- [x] Map NPCI response codes (`00`, `ZP`, `ZD`, etc.) onto the normalized
       taxonomy in `internal/upi/errors.go`.
-- [ ] Persist `rail_requests`, `rail_chargebacks` rows and emit
+- [x] Persist `rail_requests`, `rail_chargebacks` rows and emit
       `rail_chargeback_rate` metrics.
 
 ### Acceptance criteria
@@ -197,14 +197,14 @@ the circuit is open and retrying transient failures idempotently.
 
 ### Tasks
 
-- [ ] Add `internal/rail/circuit/` breaker scoped to `<rail>:<endpoint>` with
+- [x] Add `internal/rail/circuit/` breaker scoped to `<rail>:<endpoint>` with
       `CIRCUIT_MAX_FAILURES` threshold and half-open probe.
-- [ ] Add `internal/rail/retry/` exponential backoff + jitter reusing the
+- [x] Add `internal/rail/retry/` exponential backoff + jitter reusing the
       outbound `IdempotencyKey`, capped by `RETRY_MAX_ATTEMPTS`.
-- [ ] Wrap outbound calls in `internal/rail/middleware.go` so every adapter
+- [x] Wrap outbound calls in `internal/rail/middleware.go` so every adapter
       benefits transparently.
-- [ ] Emit `rail_circuit_open` Prometheus metric per rail.
-- [ ] Unit-test breaker open/half-open/closed transitions and retry behavior
+- [x] Emit `rail_circuit_open` Prometheus metric per rail.
+- [x] Unit-test breaker open/half-open/closed transitions and retry behavior
   against a stub client.
 
 ### Acceptance criteria
@@ -256,15 +256,15 @@ files), match entries to `rail_requests`, and emit settlement + audit events.
 - [x] Add `internal/settlement/scheduler.go` pulling files from SFTP / API on a
       configurable cadence per rail.
       *(Simplified: in-memory `settlement.Tracker` instead of SFTP/API.)*
-- [ ] Add per-rail parsers in `internal/settlement/{nacha,iso20022,spi,npci}/`.
+- [x] Add per-rail parsers in `internal/settlement/{nacha,iso20022,spi,npci}/`.
 - [x] For each parsed entry: match to a `rail_requests` row, insert a
       `rail_settlements` row, update the request status to `Settled`.
       *(Simplified: `Store.AddSettle` matches by `payment_id` in memory.)*
 - [x] Emit `rail.settlement.completed` to Reconciliation and audit-event-log.
       *(Simplified: emitted via in-memory `audit.Sink`.)*
-- [ ] Unmatched entries emit a `SETTLEMENT_BREAK` normalized error and an alert
+- [x] Unmatched entries emit a `SETTLEMENT_BREAK` normalized error and an alert
       event.
-- [ ] Unit-test parsers with sample fixtures and the matcher against a seeded
+- [x] Unit-test parsers with sample fixtures and the matcher against a seeded
       `rail_requests` table (use sqlmock or an in-memory pg).
 
 ### Acceptance criteria
@@ -288,9 +288,9 @@ CI pipeline alignment with the README.
 - [x] Raise package coverage; report via `codecov.yml`
       and close gaps flagged by `go test -cover`.
 - [x] Ensure `go test -race ./...` passes and add race flag to CI.
-- [ ] Add `make lint` (golangci-lint) and `make fmt-check` targets; wire into
+- [x] Add `make lint` (golangci-lint) and `make fmt-check` targets; wire into
       CI.
-- [ ] Add `/metrics` Prometheus endpoint exposing all `rail_*` metrics.
+- [x] Add `/metrics` Prometheus endpoint exposing all `rail_*` metrics.
 - [x] Finalize `Dockerfile` multi-stage build producing a minimal image per
       `RAIL_FAMILY` build arg.
       *(Simplified: single-stage build of `cmd/rail-connectors`; no per-family

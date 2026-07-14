@@ -38,11 +38,11 @@ type SettleEntry struct {
 type ChargebackEntry struct {
 	ChargebackID string
 	Rail         string
-	PaymentID     string
-	Amount        float64
-	ReasonCode    string
-	ReceivedAt    time.Time
-	Status        rail.Status
+	PaymentID    string
+	Amount       float64
+	ReasonCode   string
+	ReceivedAt   time.Time
+	Status       rail.Status
 }
 
 // Store is a concurrency-safe in-memory rail state store. It replaces the
@@ -59,7 +59,7 @@ type Store struct {
 func New() *Store {
 	return &Store{
 		requests:    make(map[string]*Record),
-		settleAmt:  make(map[string]float64),
+		settleAmt:   make(map[string]float64),
 		chargebacks: nil,
 	}
 }

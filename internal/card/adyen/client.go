@@ -16,7 +16,7 @@ import (
 // adapter. The BaseURL and APIKey are configurable so tests can point the
 // client at an httptest.Server.
 type Client struct {
-	BaseURL   string
+	BaseURL  string
 	APIKey   string
 	Merchant string
 	HTTP     *http.Client
@@ -25,18 +25,18 @@ type Client struct {
 // New constructs an Adyen client.
 func New(baseURL, apiKey, merchant string) *Client {
 	return &Client{
-		BaseURL:   baseURL,
-		APIKey:    apiKey,
-		Merchant:  merchant,
-		HTTP:      &http.Client{Timeout: 30 * time.Second},
+		BaseURL:  baseURL,
+		APIKey:   apiKey,
+		Merchant: merchant,
+		HTTP:     &http.Client{Timeout: 30 * time.Second},
 	}
 }
 
 // PaymentResponse is the response from /payments.
 type PaymentResponse struct {
-	PSPReference    string `json:"pspReference"`
-	ResultCode      string `json:"resultCode"`
-	RefusalReason   string `json:"refusalReason"`
+	PSPReference      string `json:"pspReference"`
+	ResultCode        string `json:"resultCode"`
+	RefusalReason     string `json:"refusalReason"`
 	RefusalReasonCode string `json:"refusalReasonCode"`
 }
 
@@ -67,7 +67,7 @@ func (e *APIError) Error() string {
 func DeclineCode(err error) string {
 	if ae, ok := err.(*APIError); ok {
 		return ae.Code
-  }
+	}
 	return ""
 }
 
