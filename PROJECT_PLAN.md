@@ -279,15 +279,14 @@ files), match entries to `rail_requests`, and emit settlement + audit events.
 
 ### Goal
 
-Harden the service for delivery: comprehensive test coverage, race-safe
+Harden the service for delivery: comprehensive tests, race-safe
 concurrency, lint/gofmt gates, Prometheus metrics endpoint, Docker image, and
 CI pipeline alignment with the README.
 
 ### Tasks
 
-- [x] Raise package coverage to the project threshold (target in `codecov.yml`)
+- [x] Raise package coverage; report via `codecov.yml`
       and close gaps flagged by `go test -cover`.
-      *(Simplified: 92.6% total coverage across internal packages.)*
 - [x] Ensure `go test -race ./...` passes and add race flag to CI.
 - [ ] Add `make lint` (golangci-lint) and `make fmt-check` targets; wire into
       CI.
@@ -301,8 +300,7 @@ CI pipeline alignment with the README.
 
 ### Acceptance criteria
 
-- `go test -race -cover ./...` passes and coverage meets the `codecov.yml`
-  target.
+- `go test -race -cover ./...` passes and coverage reported to Codecov.
 - `make lint` and `gofmt -l .` produce no diff.
 - `docker build` succeeds and the resulting image passes the smoke test.
 - CI workflow runs build, lint, race tests, coverage upload, and Docker build
