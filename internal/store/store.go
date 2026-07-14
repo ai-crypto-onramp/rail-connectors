@@ -34,20 +34,33 @@ type SettleEntry struct {
 	SourceRef string
 }
 
+// ChargebackEntry is an in-memory dispute record received from a rail.
+type ChargebackEntry struct {
+	ChargebackID string
+	Rail         string
+	PaymentID     string
+	Amount        float64
+	ReasonCode    string
+	ReceivedAt    time.Time
+	Status        rail.Status
+}
+
 // Store is a concurrency-safe in-memory rail state store. It replaces the
 // PostgreSQL tables from the full spec for the simplified implementation.
 type Store struct {
-	mu        sync.RWMutex
-	requests  map[string]*Record
-	settles   []SettleEntry
-	settleAmt map[string]float64 // payment_id -> total settled
+	mu          sync.RWMutex
+	requests    map[string]*Record
+	settles     []SettleEntry
+	settleAmt   map[string]float64 // payment_id -> total settled
+	chargebacks []ChargebackEntry
 }
 
 // New constructs a new in-memory Store.
 func New() *Store {
 	return &Store{
-		requests:  make(map[string]*Record),
-		settleAmt: make(map[string]float64),
+		requests:    make(map[string]*Record),
+		settleAmt:  make(map[string]float64),
+		chargebacks: nil,
 	}
 }
 
@@ -134,6 +147,51 @@ func (s *Store) All() []Record {
 	out := make([]Record, 0, len(s.requests))
 	for _, r := range s.requests {
 		out = append(out, *r)
+	}
+	return out
+}
+
+// AddChargeback records a chargeback / dispute and marks the matching request
+// Chargeback. Returns the inserted entry with a generated ChargebackID and
+// ReceivedAt if unset.
+func (s *Store) AddChargeback(e ChargebackEntry) ChargebackEntry {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if e.ReceivedAt.IsZero() {
+		e.ReceivedAt = time.Now().UTC()
+	}
+	if e.ChargebackID == "" {
+		e.ChargebackID = "cbk-" + e.PaymentID
+	}
+	if e.Status == "" {
+		e.Status = rail.StatusChargeback
+	}
+	s.chargebacks = append(s.chargebacks, e)
+	if r, ok := s.requests[e.PaymentID]; ok {
+		r.Status = rail.StatusChargeback
+		r.UpdatedAt = time.Now().UTC()
+	}
+	return e
+}
+
+// Chargebacks returns a copy of all recorded chargeback entries.
+func (s *Store) Chargebacks() []ChargebackEntry {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	out := make([]ChargebackEntry, len(s.chargebacks))
+	copy(out, s.chargebacks)
+	return out
+}
+
+// ChargebacksFor returns a copy of all chargeback entries for a payment id.
+func (s *Store) ChargebacksFor(paymentID string) []ChargebackEntry {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var out []ChargebackEntry
+	for _, c := range s.chargebacks {
+		if c.PaymentID == paymentID {
+			out = append(out, c)
+		}
 	}
 	return out
 }
