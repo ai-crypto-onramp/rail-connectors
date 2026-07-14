@@ -197,9 +197,8 @@ func TestWebhookHappy(t *testing.T) {
 	t.Parallel()
 	svc, _, s := newTestService(t)
 	doRequest(t, svc, http.MethodPost, "/v1/authorize", authorizeReq{PaymentID: "p5", Amount: 1}, "")
-	body := []byte(`{"payment_id":"p5","status":"settle"}`)
 	// Use a recognized status so the webhook updates the store.
-	body = []byte(`{"payment_id":"p5","status":"settled"}`)
+	body := []byte(`{"payment_id":"p5","status":"settled"}`)
 	sig := webhooks.Compute(body, "dev-secret")
 	req := httptest.NewRequest(http.MethodPost, "/webhooks/card", bytes.NewReader(body))
 	req.Header.Set("X-Webhook-Signature", sig)
