@@ -10,7 +10,7 @@ import (
 	"github.com/ai-crypto-onramp/rail-connectors/internal/store"
 )
 
-func newTestConnector(t *testing.T, fail bool) (*Connector, *store.Store, *settlement.Tracker, *audit.Recorder) {
+func newTestConnector(t *testing.T, fail bool) (*Connector, store.Store, *settlement.Tracker, *audit.Recorder) {
 	t.Helper()
 	s := store.New()
 	tr := settlement.New(s)

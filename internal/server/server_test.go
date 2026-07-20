@@ -15,7 +15,7 @@ import (
 	"github.com/ai-crypto-onramp/rail-connectors/internal/webhooks"
 )
 
-func newTestService(t *testing.T) (*Service, *audit.Recorder, *store.Store) {
+func newTestService(t *testing.T) (*Service, *audit.Recorder, store.Store) {
 	t.Helper()
 	s := store.New()
 	rec := audit.NewRecorder()

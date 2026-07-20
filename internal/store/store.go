@@ -47,17 +47,29 @@ type ChargebackEntry struct {
 
 // Store is a concurrency-safe in-memory rail state store. It replaces the
 // PostgreSQL tables from the full spec for the simplified implementation.
-type Store struct {
+type Store interface {
+	Upsert(r Record)
+	Get(paymentID string) (Record, bool)
+	SetStatus(paymentID string, status rail.Status, code, msg string) bool
+	AddSettle(e SettleEntry)
+	Settles() []SettleEntry
+	SettledAmount(paymentID string) float64
+	All() []Record
+	AddChargeback(e ChargebackEntry) ChargebackEntry
+	Chargebacks() []ChargebackEntry
+	ChargebacksFor(paymentID string) []ChargebackEntry
+}
+
+type MemStore struct {
 	mu          sync.RWMutex
 	requests    map[string]*Record
 	settles     []SettleEntry
-	settleAmt   map[string]float64 // payment_id -> total settled
+	settleAmt   map[string]float64
 	chargebacks []ChargebackEntry
 }
 
-// New constructs a new in-memory Store.
-func New() *Store {
-	return &Store{
+func New() *MemStore {
+	return &MemStore{
 		requests:    make(map[string]*Record),
 		settleAmt:   make(map[string]float64),
 		chargebacks: nil,
@@ -65,7 +77,7 @@ func New() *Store {
 }
 
 // Upsert inserts or updates the record for PaymentID.
-func (s *Store) Upsert(r Record) {
+func (s *MemStore) Upsert(r Record) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	now := time.Now().UTC()
@@ -83,7 +95,7 @@ func (s *Store) Upsert(r Record) {
 }
 
 // Get returns a copy of the record for PaymentID, or false.
-func (s *Store) Get(paymentID string) (Record, bool) {
+func (s *MemStore) Get(paymentID string) (Record, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	r, ok := s.requests[paymentID]
@@ -94,7 +106,7 @@ func (s *Store) Get(paymentID string) (Record, bool) {
 }
 
 // SetStatus updates just the status + error fields of a record.
-func (s *Store) SetStatus(paymentID string, status rail.Status, code, msg string) bool {
+func (s *MemStore) SetStatus(paymentID string, status rail.Status, code, msg string) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	r, ok := s.requests[paymentID]
@@ -109,7 +121,7 @@ func (s *Store) SetStatus(paymentID string, status rail.Status, code, msg string
 }
 
 // AddSettle records a settlement and marks the matching request Settled.
-func (s *Store) AddSettle(e SettleEntry) {
+func (s *MemStore) AddSettle(e SettleEntry) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	e.SettledAt = time.Now().UTC()
@@ -125,7 +137,7 @@ func (s *Store) AddSettle(e SettleEntry) {
 }
 
 // Settles returns a copy of all settlement entries.
-func (s *Store) Settles() []SettleEntry {
+func (s *MemStore) Settles() []SettleEntry {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	out := make([]SettleEntry, len(s.settles))
@@ -134,14 +146,14 @@ func (s *Store) Settles() []SettleEntry {
 }
 
 // SettledAmount returns the total settled amount for a payment.
-func (s *Store) SettledAmount(paymentID string) float64 {
+func (s *MemStore) SettledAmount(paymentID string) float64 {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.settleAmt[paymentID]
 }
 
 // All returns copies of all records (for tests/inspection).
-func (s *Store) All() []Record {
+func (s *MemStore) All() []Record {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	out := make([]Record, 0, len(s.requests))
@@ -154,7 +166,7 @@ func (s *Store) All() []Record {
 // AddChargeback records a chargeback / dispute and marks the matching request
 // Chargeback. Returns the inserted entry with a generated ChargebackID and
 // ReceivedAt if unset.
-func (s *Store) AddChargeback(e ChargebackEntry) ChargebackEntry {
+func (s *MemStore) AddChargeback(e ChargebackEntry) ChargebackEntry {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if e.ReceivedAt.IsZero() {
@@ -175,7 +187,7 @@ func (s *Store) AddChargeback(e ChargebackEntry) ChargebackEntry {
 }
 
 // Chargebacks returns a copy of all recorded chargeback entries.
-func (s *Store) Chargebacks() []ChargebackEntry {
+func (s *MemStore) Chargebacks() []ChargebackEntry {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	out := make([]ChargebackEntry, len(s.chargebacks))
@@ -184,7 +196,7 @@ func (s *Store) Chargebacks() []ChargebackEntry {
 }
 
 // ChargebacksFor returns a copy of all chargeback entries for a payment id.
-func (s *Store) ChargebacksFor(paymentID string) []ChargebackEntry {
+func (s *MemStore) ChargebacksFor(paymentID string) []ChargebackEntry {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	var out []ChargebackEntry

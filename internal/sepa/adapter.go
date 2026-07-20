@@ -34,7 +34,7 @@ type Config struct {
 type Connector struct {
 	cfg     Config
 	client  *gateway.Client
-	store   *store.Store
+	store   store.Store
 	audit   audit.Sink
 	log     *slog.Logger
 	authLat *metrics.Histogram
@@ -53,7 +53,7 @@ var (
 )
 
 // New constructs a SEPA Connector.
-func New(cfg Config, s *store.Store, as audit.Sink) (*Connector, error) {
+func New(cfg Config, s store.Store, as audit.Sink) (*Connector, error) {
 	baseURL := cfg.BaseURL
 	if baseURL == "" {
 		baseURL = os.Getenv("RAIL_SEPA_API_URL")

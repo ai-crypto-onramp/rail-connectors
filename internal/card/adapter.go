@@ -37,7 +37,7 @@ type Connector struct {
 	cfg       Config
 	processor Processor
 	procName  string
-	store     *store.Store
+	store     store.Store
 	audit     audit.Sink
 	log       *slog.Logger
 	authLat   *metrics.Histogram
@@ -57,7 +57,7 @@ var (
 
 // New constructs a card Connector. The processor is selected from
 // cfg.Processor; when empty, RAIL_CARD_PROCESSOR is consulted.
-func New(cfg Config, s *store.Store, as audit.Sink) (*Connector, error) {
+func New(cfg Config, s store.Store, as audit.Sink) (*Connector, error) {
 	proc := strings.ToLower(strings.TrimSpace(cfg.Processor))
 	if proc == "" {
 		proc = strings.ToLower(strings.TrimSpace(os.Getenv("RAIL_CARD_PROCESSOR")))

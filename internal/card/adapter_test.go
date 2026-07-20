@@ -14,7 +14,7 @@ import (
 	"github.com/ai-crypto-onramp/rail-connectors/internal/store"
 )
 
-func newStripeAdapter(t *testing.T) (*Connector, *httptest.Server, *store.Store, *audit.Recorder) {
+func newStripeAdapter(t *testing.T) (*Connector, *httptest.Server, store.Store, *audit.Recorder) {
 	t.Helper()
 	var capturedHeaders http.Header
 	var capturedBody []byte
@@ -217,7 +217,7 @@ func TestCardServerErrorMapsUnavailable(t *testing.T) {
 	}
 }
 
-func newAdyenAdapter(t *testing.T) (*Connector, *httptest.Server, *store.Store) {
+func newAdyenAdapter(t *testing.T) (*Connector, *httptest.Server, store.Store) {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {

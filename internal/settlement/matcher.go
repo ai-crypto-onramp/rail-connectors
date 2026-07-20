@@ -32,7 +32,7 @@ type MatchResult struct {
 // (via Store.AddSettle) and emit rail.settlement.completed events; unmatched
 // entries emit a SETTLEMENT_BREAK error and a rail.settlement.break alert
 // event. Returns one MatchResult per input entry, in order.
-func MatchEntries(s *store.Store, as audit.Sink, entries []SettledEntry) []MatchResult {
+func MatchEntries(s store.Store, as audit.Sink, entries []SettledEntry) []MatchResult {
 	if as == nil {
 		as = audit.NewRecorder()
 	}

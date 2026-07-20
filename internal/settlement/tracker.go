@@ -11,11 +11,11 @@ import (
 type Tracker struct {
 	mu     sync.Mutex
 	totals map[string]float64 // rail -> total captured/settled
-	store  *store.Store
+	store  store.Store
 }
 
 // New constructs a Tracker backed by s.
-func New(s *store.Store) *Tracker {
+func New(s store.Store) *Tracker {
 	return &Tracker{totals: map[string]float64{}, store: s}
 }
 

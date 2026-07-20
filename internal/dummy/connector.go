@@ -28,7 +28,7 @@ type Config struct {
 // Connector is the in-memory dummy rail connector.
 type Connector struct {
 	cfg      Config
-	store    *store.Store
+	store    store.Store
 	tracker  *settlement.Tracker
 	audit    audit.Sink
 	mu       sync.Mutex
@@ -36,7 +36,7 @@ type Connector struct {
 }
 
 // New constructs a DummyRailConnector backed by s and tracked by t.
-func New(s *store.Store, t *settlement.Tracker, cfg Config) *Connector {
+func New(s store.Store, t *settlement.Tracker, cfg Config) *Connector {
 	if cfg.Rail == "" {
 		cfg.Rail = "dummy"
 	}

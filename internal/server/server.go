@@ -29,7 +29,7 @@ type Config struct {
 	WebhookSecret string
 	Rail          string
 	AuditSink     audit.Sink
-	Store         *store.Store
+	Store         store.Store
 	Tracker       *settlement.Tracker
 	Connector     rail.Connector
 	Ready         bool // readyz toggles on/off
@@ -39,7 +39,7 @@ type Config struct {
 type Service struct {
 	cfg     Config
 	conn    rail.Connector
-	store   *store.Store
+	store   store.Store
 	tracker *settlement.Tracker
 	audit   audit.Sink
 	ready   bool

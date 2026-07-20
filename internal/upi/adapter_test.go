@@ -12,7 +12,7 @@ import (
 	"github.com/ai-crypto-onramp/rail-connectors/internal/store"
 )
 
-func newTestAdapter(t *testing.T) (*Connector, *httptest.Server, *store.Store, *audit.Recorder) {
+func newTestAdapter(t *testing.T) (*Connector, *httptest.Server, store.Store, *audit.Recorder) {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
