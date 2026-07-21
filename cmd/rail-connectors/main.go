@@ -8,9 +8,11 @@ import (
 	"strings"
 
 	_ "github.com/ai-crypto-onramp/rail-connectors/internal/dummy"
+	"github.com/ai-crypto-onramp/rail-connectors/internal/otel"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/server"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/store"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/store/postgres"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 func devMode() bool { return os.Getenv("DEV_MODE") == "1" }
@@ -29,6 +31,12 @@ func mustEnv(name string) string {
 }
 
 func main() {
+	shutdown, err := otel.Init("rail-connectors")
+	if err != nil {
+		log.Fatalf("otel init: %v", err)
+	}
+	defer func() { _ = shutdown(context.Background()) }()
+
 	addr := os.Getenv("PORT")
 	if addr == "" {
 		addr = ":8080"
@@ -55,7 +63,7 @@ func main() {
 		Ready:         true,
 	})
 	log.Printf("rail-connectors listening on %s (rail=%s)", addr, rail)
-	if err := http.ListenAndServe(addr, srv.Mux()); err != nil {
+	if err := http.ListenAndServe(addr, otelhttp.NewHandler(srv.Mux(), "rail-connectors")); err != nil {
 		log.Fatalf("server exited: %v", err)
 	}
 }
