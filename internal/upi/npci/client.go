@@ -10,6 +10,8 @@ import (
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 // Client is the NPCI UPI client.
@@ -32,11 +34,11 @@ type CollectResponse struct {
 }
 
 // InitiateCollect starts a UPI Collect request.
-func (c *Client) InitiateCollect(ctx context.Context, idemKey, payerVPA, payeeVPA string, amount float64, currency, remark string) (*CollectResponse, error) {
+func (c *Client) InitiateCollect(ctx context.Context, idemKey, payerVPA, payeeVPA string, amount decimal.Decimal, currency, remark string) (*CollectResponse, error) {
 	body := map[string]any{
 		"payer_vpa": payerVPA,
 		"payee_vpa": payeeVPA,
-		"amount":    amount,
+		"amount":    amount.String(),
 		"currency":  currency,
 		"remark":    remark,
 	}
@@ -92,10 +94,10 @@ type RefundResponse struct {
 }
 
 // Refund initiates a UPI refund.
-func (c *Client) Refund(ctx context.Context, idemKey, originalCollectID string, amount float64, currency string) (*RefundResponse, error) {
+func (c *Client) Refund(ctx context.Context, idemKey, originalCollectID string, amount decimal.Decimal, currency string) (*RefundResponse, error) {
 	body := map[string]any{
 		"original_collect_id": originalCollectID,
-		"amount":              amount,
+		"amount":              amount.String(),
 		"currency":            currency,
 	}
 	resp, err := c.doPost(ctx, "/v1/upi/refunds", idemKey, body)
@@ -117,11 +119,11 @@ type DisputeResponse struct {
 }
 
 // RecordDispute records a chargeback / dispute.
-func (c *Client) RecordDispute(ctx context.Context, idemKey, originalCollectID, reasonCode string, amount float64, currency string) (*DisputeResponse, error) {
+func (c *Client) RecordDispute(ctx context.Context, idemKey, originalCollectID, reasonCode string, amount decimal.Decimal, currency string) (*DisputeResponse, error) {
 	body := map[string]any{
 		"original_collect_id": originalCollectID,
 		"reason_code":         reasonCode,
-		"amount":              amount,
+		"amount":              amount.String(),
 		"currency":            currency,
 	}
 	resp, err := c.doPost(ctx, "/v1/upi/disputes", idemKey, body)

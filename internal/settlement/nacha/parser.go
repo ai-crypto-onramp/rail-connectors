@@ -8,16 +8,17 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strconv"
 	"strings"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 // Entry is a single settled entry parsed from a NACHA summary CSV row.
 type Entry struct {
 	PaymentID string
 	Rail      string
-	Amount    float64
+	Amount    decimal.Decimal
 	Currency  string
 	SettledAt time.Time
 	SourceRef string
@@ -44,7 +45,7 @@ func Parse(r io.Reader) ([]Entry, error) {
 		if len(row) < 5 {
 			return nil, fmt.Errorf("nacha settlement: row %d has %d cols, want >=5", i, len(row))
 		}
-		amt, err := strconv.ParseFloat(strings.TrimSpace(row[2]), 64)
+		amt, err := decimal.NewFromString(strings.TrimSpace(row[2]))
 		if err != nil {
 			return nil, fmt.Errorf("nacha settlement: row %d amount: %w", i, err)
 		}

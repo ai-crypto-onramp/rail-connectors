@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/shopspring/decimal"
+
 	"github.com/ai-crypto-onramp/rail-connectors/internal/audit"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/rail"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/settlement"
@@ -22,7 +24,7 @@ func newTestConnector(t *testing.T, fail bool) (*Connector, store.Store, *settle
 func TestAuthorizeHappy(t *testing.T) {
 	t.Parallel()
 	c, s, _, rec := newTestConnector(t, false)
-	ctx := rail.Context{PaymentID: "p1", Rail: "card", Amount: 10.5, Currency: "USD"}
+	ctx := rail.Context{PaymentID: "p1", Rail: "card", Amount: decimal.NewFromFloat(10.5), Currency: "USD"}
 	resp, err := c.Authorize(context.Background(), ctx)
 	if err != nil {
 		t.Fatalf("unexpected err: %v", err)
@@ -66,11 +68,11 @@ func TestAuthorizeForcedFail(t *testing.T) {
 func TestCaptureHappy(t *testing.T) {
 	t.Parallel()
 	c, s, tr, _ := newTestConnector(t, false)
-	ctx := rail.Context{PaymentID: "p3", Rail: "card", Amount: 25.0, Currency: "USD"}
+	ctx := rail.Context{PaymentID: "p3", Rail: "card", Amount: decimal.NewFromInt(25), Currency: "USD"}
 	if _, err := c.Authorize(context.Background(), ctx); err != nil {
 		t.Fatal(err)
 	}
-	resp, err := c.Capture(context.Background(), ctx, 25.0)
+	resp, err := c.Capture(context.Background(), ctx, decimal.NewFromInt(25))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,7 +83,7 @@ func TestCaptureHappy(t *testing.T) {
 	if r.Status != rail.StatusCaptured {
 		t.Fatalf("store status = %q", r.Status)
 	}
-	if tr.Total("card") != 25.0 {
+	if tr.Total("card").Cmp(decimal.NewFromInt(25)) != 0 {
 		t.Fatalf("tracker total = %v", tr.Total("card"))
 	}
 }
@@ -89,7 +91,7 @@ func TestCaptureHappy(t *testing.T) {
 func TestCaptureUnknownPayment(t *testing.T) {
 	t.Parallel()
 	c, _, _, _ := newTestConnector(t, false)
-	resp, _ := c.Capture(context.Background(), rail.Context{PaymentID: "ghost"}, 1.0)
+	resp, _ := c.Capture(context.Background(), rail.Context{PaymentID: "ghost"}, decimal.NewFromInt(1))
 	if resp.ErrorCode != rail.CodeInvalidRequest {
 		t.Fatalf("expected invalid, got %+v", resp)
 	}
@@ -99,7 +101,7 @@ func TestCaptureWrongState(t *testing.T) {
 	t.Parallel()
 	c, _, _, _ := newTestConnector(t, false)
 	// No authorize first; store record will be absent.
-	resp, _ := c.Capture(context.Background(), rail.Context{PaymentID: "p4"}, 5.0)
+	resp, _ := c.Capture(context.Background(), rail.Context{PaymentID: "p4"}, decimal.NewFromInt(5))
 	if resp.ErrorCode != rail.CodeInvalidRequest {
 		t.Fatalf("expected invalid, got %+v", resp)
 	}
@@ -108,14 +110,14 @@ func TestCaptureWrongState(t *testing.T) {
 func TestRefundHappy(t *testing.T) {
 	t.Parallel()
 	c, s, tr, _ := newTestConnector(t, false)
-	ctx := rail.Context{PaymentID: "p5", Rail: "card", Amount: 50.0, Currency: "EUR"}
+	ctx := rail.Context{PaymentID: "p5", Rail: "card", Amount: decimal.NewFromInt(50), Currency: "EUR"}
 	if _, err := c.Authorize(context.Background(), ctx); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := c.Capture(context.Background(), ctx, 50.0); err != nil {
+	if _, err := c.Capture(context.Background(), ctx, decimal.NewFromInt(50)); err != nil {
 		t.Fatal(err)
 	}
-	resp, err := c.Refund(context.Background(), ctx, 20.0)
+	resp, err := c.Refund(context.Background(), ctx, decimal.NewFromInt(20))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,7 +128,7 @@ func TestRefundHappy(t *testing.T) {
 	if r.Status != rail.StatusRefunded {
 		t.Fatalf("store status = %q", r.Status)
 	}
-	if tr.Total("card") != 30.0 {
+	if tr.Total("card").Cmp(decimal.NewFromInt(30)) != 0 {
 		t.Fatalf("net total = %v", tr.Total("card"))
 	}
 }
@@ -134,11 +136,11 @@ func TestRefundHappy(t *testing.T) {
 func TestRefundWrongState(t *testing.T) {
 	t.Parallel()
 	c, _, _, _ := newTestConnector(t, false)
-	ctx := rail.Context{PaymentID: "p6", Rail: "card", Amount: 10.0}
+	ctx := rail.Context{PaymentID: "p6", Rail: "card", Amount: decimal.NewFromInt(10)}
 	if _, err := c.Authorize(context.Background(), ctx); err != nil {
 		t.Fatal(err)
 	}
-	resp, _ := c.Refund(context.Background(), ctx, 10.0)
+	resp, _ := c.Refund(context.Background(), ctx, decimal.NewFromInt(10))
 	if resp.ErrorCode != rail.CodeInvalidRequest {
 		t.Fatalf("expected invalid (not captured), got %+v", resp)
 	}
@@ -177,7 +179,7 @@ func TestSetFailRuntimeToggle(t *testing.T) {
 		t.Fatal(err)
 	}
 	c.SetFail(true)
-	resp, _ := c.Capture(context.Background(), ctx, 1.0)
+	resp, _ := c.Capture(context.Background(), ctx, decimal.NewFromInt(1))
 	if resp.ErrorCode != rail.CodeRailUnavailable {
 		t.Fatalf("expected forced fail, got %+v", resp)
 	}
@@ -198,7 +200,7 @@ func TestRegistryNew(t *testing.T) {
 
 func TestFormatAmount(t *testing.T) {
 	t.Parallel()
-	if FormatAmount(1) != "1.00" {
-		t.Fatalf("got %q", FormatAmount(1))
+	if FormatAmount(decimal.NewFromInt(1)) != "1" {
+		t.Fatalf("got %q", FormatAmount(decimal.NewFromInt(1)))
 	}
 }

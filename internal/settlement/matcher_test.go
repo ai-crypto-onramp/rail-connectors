@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/shopspring/decimal"
+
 	"github.com/ai-crypto-onramp/rail-connectors/internal/audit"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/rail"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/store"
@@ -15,7 +17,7 @@ func TestMatchEntriesMatched(t *testing.T) {
 	rec := audit.NewRecorder()
 	s.Upsert(store.Record{PaymentID: "p1", Rail: "card", Status: rail.StatusCaptured})
 	entries := []SettledEntry{
-		{PaymentID: "p1", Rail: "card", Amount: 100, Currency: "USD", SettledAt: time.Now(), SourceRef: "file.csv"},
+		{PaymentID: "p1", Rail: "card", Amount: decimal.NewFromInt(100), Currency: "USD", SettledAt: time.Now(), SourceRef: "file.csv"},
 	}
 	results := MatchEntries(s, rec, entries)
 	if len(results) != 1 || !results[0].Matched {
@@ -24,7 +26,7 @@ func TestMatchEntriesMatched(t *testing.T) {
 	if results[0].Error != nil {
 		t.Fatalf("unexpected error: %v", results[0].Error)
 	}
-	if s.SettledAmount("p1") != 100 {
+	if s.SettledAmount("p1").Cmp(decimal.NewFromInt(100)) != 0 {
 		t.Fatalf("settled = %v", s.SettledAmount("p1"))
 	}
 	r, _ := s.Get("p1")
@@ -47,7 +49,7 @@ func TestMatchEntriesUnmatchedBreak(t *testing.T) {
 	s := store.New()
 	rec := audit.NewRecorder()
 	entries := []SettledEntry{
-		{PaymentID: "ghost", Rail: "ach", Amount: 50, Currency: "USD", SettledAt: time.Now(), SourceRef: "file.csv"},
+		{PaymentID: "ghost", Rail: "ach", Amount: decimal.NewFromInt(50), Currency: "USD", SettledAt: time.Now(), SourceRef: "file.csv"},
 	}
 	results := MatchEntries(s, rec, entries)
 	if len(results) != 1 {
@@ -59,7 +61,7 @@ func TestMatchEntriesUnmatchedBreak(t *testing.T) {
 	if results[0].Error == nil || results[0].Error.Code != rail.CodeSettlementBreak {
 		t.Fatalf("error = %v", results[0].Error)
 	}
-	if s.SettledAmount("ghost") != 0 {
+	if !s.SettledAmount("ghost").IsZero() {
 		t.Fatal("should not settle unmatched")
 	}
 	found := false
@@ -80,9 +82,9 @@ func TestMatchEntriesMixed(t *testing.T) {
 	s.Upsert(store.Record{PaymentID: "p1", Rail: "sepa", Status: rail.StatusCaptured})
 	s.Upsert(store.Record{PaymentID: "p2", Rail: "sepa", Status: rail.StatusCaptured})
 	entries := []SettledEntry{
-		{PaymentID: "p1", Rail: "sepa", Amount: 100, Currency: "EUR", SourceRef: "stmt.xml"},
-		{PaymentID: "missing", Rail: "sepa", Amount: 200, Currency: "EUR", SourceRef: "stmt.xml"},
-		{PaymentID: "p2", Rail: "sepa", Amount: 300, Currency: "EUR", SourceRef: "stmt.xml"},
+		{PaymentID: "p1", Rail: "sepa", Amount: decimal.NewFromInt(100), Currency: "EUR", SourceRef: "stmt.xml"},
+		{PaymentID: "missing", Rail: "sepa", Amount: decimal.NewFromInt(200), Currency: "EUR", SourceRef: "stmt.xml"},
+		{PaymentID: "p2", Rail: "sepa", Amount: decimal.NewFromInt(300), Currency: "EUR", SourceRef: "stmt.xml"},
 	}
 	results := MatchEntries(s, rec, entries)
 	if len(results) != 3 {
@@ -100,7 +102,7 @@ func TestMatchEntriesMixed(t *testing.T) {
 	if matched != 2 || broken != 1 {
 		t.Fatalf("matched=%d broken=%d", matched, broken)
 	}
-	if s.SettledAmount("p1") != 100 || s.SettledAmount("p2") != 300 {
+	if s.SettledAmount("p1").Cmp(decimal.NewFromInt(100)) != 0 || s.SettledAmount("p2").Cmp(decimal.NewFromInt(300)) != 0 {
 		t.Fatalf("settled p1=%v p2=%v", s.SettledAmount("p1"), s.SettledAmount("p2"))
 	}
 	completed := 0
@@ -122,7 +124,7 @@ func TestMatchEntriesNilAuditUsesRecorder(t *testing.T) {
 	t.Parallel()
 	s := store.New()
 	s.Upsert(store.Record{PaymentID: "p1", Rail: "card", Status: rail.StatusCaptured})
-	results := MatchEntries(s, nil, []SettledEntry{{PaymentID: "p1", Rail: "card", Amount: 10, Currency: "USD"}})
+	results := MatchEntries(s, nil, []SettledEntry{{PaymentID: "p1", Rail: "card", Amount: decimal.NewFromInt(10), Currency: "USD"}})
 	if len(results) != 1 || !results[0].Matched {
 		t.Fatalf("results = %+v", results)
 	}

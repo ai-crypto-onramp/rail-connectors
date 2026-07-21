@@ -3,6 +3,8 @@ package settlement
 import (
 	"time"
 
+	"github.com/shopspring/decimal"
+
 	"github.com/ai-crypto-onramp/rail-connectors/internal/audit"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/rail"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/store"
@@ -14,7 +16,7 @@ import (
 type SettledEntry struct {
 	PaymentID string
 	Rail      string
-	Amount    float64
+	Amount    decimal.Decimal
 	Currency  string
 	SettledAt time.Time
 	SourceRef string

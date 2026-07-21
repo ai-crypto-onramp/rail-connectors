@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/shopspring/decimal"
+
 	"github.com/ai-crypto-onramp/rail-connectors/internal/audit"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/dummy"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/metrics"
@@ -117,10 +119,13 @@ func (s *Service) readyz(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ready"})
 }
 
+// authorizeReq is the JSON body for POST /v1/authorize.
+//
+// BREAKING: amount is a JSON string (decimal-encoded), not a JSON number.
 type authorizeReq struct {
 	PaymentID    string            `json:"payment_id"`
 	Rail         string            `json:"rail"`
-	Amount       float64           `json:"amount"`
+	Amount       decimal.Decimal   `json:"amount"`
 	Currency     string            `json:"currency"`
 	PayerRef     string            `json:"payer_ref"`
 	Attempt      int               `json:"attempt"`
@@ -159,8 +164,11 @@ func (s *Service) authorize(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, statusForResp(resp), resp)
 }
 
+// amountReq is the JSON body for POST /v1/capture and /v1/refund.
+//
+// BREAKING: amount is a JSON string (decimal-encoded), not a JSON number.
 type amountReq struct {
-	Amount float64 `json:"amount"`
+	Amount decimal.Decimal `json:"amount"`
 }
 
 func (s *Service) capture(w http.ResponseWriter, r *http.Request) {

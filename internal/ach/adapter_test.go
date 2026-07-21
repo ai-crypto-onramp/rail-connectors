@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/shopspring/decimal"
+
 	"github.com/ai-crypto-onramp/rail-connectors/internal/audit"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/rail"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/store"
@@ -46,7 +48,7 @@ func achCtx(pid string) rail.Context {
 	return rail.Context{
 		PaymentID: pid,
 		Rail:      "ach",
-		Amount:    10.0,
+		Amount:    decimal.NewFromInt(10),
 		Currency:  "USD",
 		RailSpecific: map[string]string{
 			"routing":  "012345678",
@@ -89,7 +91,7 @@ func TestACHCaptureBatchSubmit(t *testing.T) {
 	if _, err := c.Authorize(context.Background(), ctx); err != nil {
 		t.Fatal(err)
 	}
-	resp, err := c.Capture(context.Background(), ctx, 10.0)
+	resp, err := c.Capture(context.Background(), ctx, decimal.NewFromInt(10))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,10 +112,10 @@ func TestACHRefundReversing(t *testing.T) {
 	if _, err := c.Authorize(context.Background(), ctx); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := c.Capture(context.Background(), ctx, 10.0); err != nil {
+	if _, err := c.Capture(context.Background(), ctx, decimal.NewFromInt(10)); err != nil {
 		t.Fatal(err)
 	}
-	resp, err := c.Refund(context.Background(), ctx, 5.0)
+	resp, err := c.Refund(context.Background(), ctx, decimal.NewFromInt(5))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -203,7 +205,7 @@ func TestACHCaptureUnknownPayment(t *testing.T) {
 	t.Parallel()
 	c, srv, _, _ := newTestAdapter(t)
 	defer srv.Close()
-	resp, _ := c.Capture(context.Background(), rail.Context{PaymentID: "ghost"}, 1)
+	resp, _ := c.Capture(context.Background(), rail.Context{PaymentID: "ghost"}, decimal.NewFromInt(1))
 	if resp.ErrorCode != rail.CodeInvalidRequest {
 		t.Fatalf("got %+v", resp)
 	}

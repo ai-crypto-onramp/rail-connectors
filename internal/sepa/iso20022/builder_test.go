@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 func TestBuildPain001Valid(t *testing.T) {
@@ -16,8 +18,8 @@ func TestBuildPain001Valid(t *testing.T) {
 		ExecutionDate: time.Date(2026, 7, 14, 0, 0, 0, 0, time.UTC),
 		Currency:      "EUR",
 		Transfers: []Transfer{
-			{EndToEndID: "E2E-1", CreditorName: "Bob", CreditorIBAN: "FR1420041010050500013M02606", Amount: 100.50, Reference: "REF-1"},
-			{EndToEndID: "E2E-2", CreditorName: "Cara", CreditorIBAN: "FR1420041010050500013M02607", Amount: 200.00, Reference: "REF-2"},
+			{EndToEndID: "E2E-1", CreditorName: "Bob", CreditorIBAN: "FR1420041010050500013M02606", Amount: decimal.NewFromFloat(100.50), Reference: "REF-1"},
+			{EndToEndID: "E2E-2", CreditorName: "Cara", CreditorIBAN: "FR1420041010050500013M02607", Amount: decimal.NewFromInt(200), Reference: "REF-2"},
 		},
 	}
 	out, err := BuildPain001(p)

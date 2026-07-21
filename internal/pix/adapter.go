@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/shopspring/decimal"
+
 	"github.com/ai-crypto-onramp/rail-connectors/internal/audit"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/metrics"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/pix/spi"
@@ -121,7 +123,7 @@ func (c *Connector) Authorize(ctx context.Context, in rail.Context) (rail.Respon
 
 // Capture is a no-op for PIX (instant payment is already settled at
 // Authorize); we just mark the status Captured if currently Authorized.
-func (c *Connector) Capture(ctx context.Context, in rail.Context, amount float64) (rail.Response, error) {
+func (c *Connector) Capture(ctx context.Context, in rail.Context, amount decimal.Decimal) (rail.Response, error) {
 	if in.PaymentID == "" {
 		return failResp(rail.CodeInvalidRequest, "missing payment_id"), nil
 	}
@@ -151,7 +153,7 @@ func (c *Connector) Capture(ctx context.Context, in rail.Context, amount float64
 }
 
 // Refund initiates a PIX refund.
-func (c *Connector) Refund(ctx context.Context, in rail.Context, amount float64) (rail.Response, error) {
+func (c *Connector) Refund(ctx context.Context, in rail.Context, amount decimal.Decimal) (rail.Response, error) {
 	if in.PaymentID == "" {
 		return failResp(rail.CodeInvalidRequest, "missing payment_id"), nil
 	}

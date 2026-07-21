@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/shopspring/decimal"
+
 	"github.com/ai-crypto-onramp/rail-connectors/internal/audit"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/metrics"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/rail"
@@ -122,7 +124,7 @@ func (c *Connector) Authorize(ctx context.Context, in rail.Context) (rail.Respon
 
 // Capture confirms a UPI Collect by polling the collect status and treating
 // CONFIRMED as captured.
-func (c *Connector) Capture(ctx context.Context, in rail.Context, amount float64) (rail.Response, error) {
+func (c *Connector) Capture(ctx context.Context, in rail.Context, amount decimal.Decimal) (rail.Response, error) {
 	if in.PaymentID == "" {
 		return failResp(rail.CodeInvalidRequest, "missing payment_id"), nil
 	}
@@ -159,7 +161,7 @@ func (c *Connector) Capture(ctx context.Context, in rail.Context, amount float64
 }
 
 // Refund initiates a UPI refund.
-func (c *Connector) Refund(ctx context.Context, in rail.Context, amount float64) (rail.Response, error) {
+func (c *Connector) Refund(ctx context.Context, in rail.Context, amount decimal.Decimal) (rail.Response, error) {
 	if in.PaymentID == "" {
 		return failResp(rail.CodeInvalidRequest, "missing payment_id"), nil
 	}
@@ -210,7 +212,7 @@ func (c *Connector) GetStatus(ctx context.Context, in rail.Context) (rail.Status
 // Chargeback records a dispute / chargeback from the rail and emits the
 // rail.chargeback.received event. It inserts a rail_chargebacks row via the
 // store and increments the rail_chargeback_rate metric.
-func (c *Connector) Chargeback(ctx context.Context, in rail.Context, amount float64, reasonCode string) (rail.Response, error) {
+func (c *Connector) Chargeback(ctx context.Context, in rail.Context, amount decimal.Decimal, reasonCode string) (rail.Response, error) {
 	if in.PaymentID == "" {
 		return failResp(rail.CodeInvalidRequest, "missing payment_id"), nil
 	}

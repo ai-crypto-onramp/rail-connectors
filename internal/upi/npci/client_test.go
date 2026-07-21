@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/shopspring/decimal"
 )
 
 func TestInitiateCollectHappy(t *testing.T) {
@@ -23,7 +25,7 @@ func TestInitiateCollectHappy(t *testing.T) {
 	}))
 	defer srv.Close()
 	c := New(srv.URL, "apikey")
-	cr, err := c.InitiateCollect(context.Background(), "idem-1", "payer@upi", "payee@upi", 100.0, "INR", "test")
+	cr, err := c.InitiateCollect(context.Background(), "idem-1", "payer@upi", "payee@upi", decimal.NewFromInt(100), "INR", "test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,7 +60,7 @@ func TestInitiateCollectResponseCode(t *testing.T) {
 	}))
 	defer srv.Close()
 	c := New(srv.URL, "k")
-	_, err := c.InitiateCollect(context.Background(), "i", "p@upi", "y@upi", 1, "INR", "x")
+	_, err := c.InitiateCollect(context.Background(), "i", "p@upi", "y@upi", decimal.NewFromInt(1), "INR", "x")
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -123,7 +125,7 @@ func TestRefundHappy(t *testing.T) {
 	}))
 	defer srv.Close()
 	c := New(srv.URL, "k")
-	rr, err := c.Refund(context.Background(), "idem-r", "C1", 50.0, "INR")
+	rr, err := c.Refund(context.Background(), "idem-r", "C1", decimal.NewFromInt(50), "INR")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -149,7 +151,7 @@ func TestRecordDisputeHappy(t *testing.T) {
 	}))
 	defer srv.Close()
 	c := New(srv.URL, "k")
-	dr, err := c.RecordDispute(context.Background(), "idem-d", "C1", "CHARGEBACK", 100.0, "INR")
+	dr, err := c.RecordDispute(context.Background(), "idem-d", "C1", "CHARGEBACK", decimal.NewFromInt(100), "INR")
 	if err != nil {
 		t.Fatal(err)
 	}

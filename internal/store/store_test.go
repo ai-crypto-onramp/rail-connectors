@@ -3,6 +3,8 @@ package store
 import (
 	"testing"
 
+	"github.com/shopspring/decimal"
+
 	"github.com/ai-crypto-onramp/rail-connectors/internal/rail"
 )
 
@@ -54,8 +56,8 @@ func TestAddSettle(t *testing.T) {
 	t.Parallel()
 	s := New()
 	s.Upsert(Record{PaymentID: "p3", Rail: "card", Status: rail.StatusCaptured})
-	s.AddSettle(SettleEntry{Rail: "card", PaymentID: "p3", Amount: 10})
-	if s.SettledAmount("p3") != 10 {
+	s.AddSettle(SettleEntry{Rail: "card", PaymentID: "p3", Amount: decimal.NewFromInt(10)})
+	if s.SettledAmount("p3").Cmp(decimal.NewFromInt(10)) != 0 {
 		t.Fatalf("settled = %v", s.SettledAmount("p3"))
 	}
 	got, _ := s.Get("p3")
@@ -81,7 +83,7 @@ func TestAddChargeback(t *testing.T) {
 	t.Parallel()
 	s := New()
 	s.Upsert(Record{PaymentID: "p4", Rail: "upi", Status: rail.StatusCaptured})
-	e := s.AddChargeback(ChargebackEntry{Rail: "upi", PaymentID: "p4", Amount: 5, ReasonCode: "ZD"})
+	e := s.AddChargeback(ChargebackEntry{Rail: "upi", PaymentID: "p4", Amount: decimal.NewFromInt(5), ReasonCode: "ZD"})
 	if e.ChargebackID == "" {
 		t.Fatal("expected chargeback id assigned")
 	}

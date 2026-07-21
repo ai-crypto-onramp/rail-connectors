@@ -11,6 +11,8 @@ import (
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 // Client is the SPI client.
@@ -75,13 +77,13 @@ type PaymentResponse struct {
 }
 
 // InitiatePayment starts a PIX instant payment.
-func (c *Client) InitiatePayment(ctx context.Context, idemKey, endToEndID, debtorDocument, creditorAccount, creditorBank string, amount float64, currency string) (*PaymentResponse, error) {
+func (c *Client) InitiatePayment(ctx context.Context, idemKey, endToEndID, debtorDocument, creditorAccount, creditorBank string, amount decimal.Decimal, currency string) (*PaymentResponse, error) {
 	body := map[string]any{
 		"end_to_end_id":      endToEndID,
 		"debtor_document":    debtorDocument,
 		"creditor_account":   creditorAccount,
 		"creditor_bank_code": creditorBank,
-		"amount":             amount,
+		"amount":             amount.String(),
 		"currency":           currency,
 	}
 	resp, err := c.doPost(ctx, "/v1/pix/payments", idemKey, body)
@@ -129,10 +131,10 @@ func (c *Client) GetPayment(ctx context.Context, paymentID string) (*PaymentResp
 }
 
 // RefundPayment initiates a PIX refund.
-func (c *Client) RefundPayment(ctx context.Context, idemKey, originalPaymentID string, amount float64, currency string) (*PaymentResponse, error) {
+func (c *Client) RefundPayment(ctx context.Context, idemKey, originalPaymentID string, amount decimal.Decimal, currency string) (*PaymentResponse, error) {
 	body := map[string]any{
 		"original_payment_id": originalPaymentID,
-		"amount":              amount,
+		"amount":              amount.String(),
 		"currency":            currency,
 	}
 	resp, err := c.doPost(ctx, "/v1/pix/refunds", idemKey, body)

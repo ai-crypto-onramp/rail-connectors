@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/shopspring/decimal"
+
 	"github.com/ai-crypto-onramp/rail-connectors/internal/audit"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/metrics"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/rail"
@@ -129,7 +131,7 @@ func (c *Connector) Authorize(ctx context.Context, in rail.Context) (rail.Respon
 
 // Capture confirms the gateway settlement of the submitted pain.001 by
 // polling pain.002 and treating an ACCEPTED status as captured.
-func (c *Connector) Capture(ctx context.Context, in rail.Context, amount float64) (rail.Response, error) {
+func (c *Connector) Capture(ctx context.Context, in rail.Context, amount decimal.Decimal) (rail.Response, error) {
 	if in.PaymentID == "" {
 		return failResp(rail.CodeInvalidRequest, "missing payment_id"), nil
 	}
@@ -164,7 +166,7 @@ func (c *Connector) Capture(ctx context.Context, in rail.Context, amount float64
 }
 
 // Refund submits a reverse pain.001 message.
-func (c *Connector) Refund(ctx context.Context, in rail.Context, amount float64) (rail.Response, error) {
+func (c *Connector) Refund(ctx context.Context, in rail.Context, amount decimal.Decimal) (rail.Response, error) {
 	if in.PaymentID == "" {
 		return failResp(rail.CodeInvalidRequest, "missing payment_id"), nil
 	}
@@ -221,7 +223,7 @@ func (c *Connector) GetStatus(ctx context.Context, in rail.Context) (rail.Status
 	return rstatus, nil
 }
 
-func (c *Connector) buildPain001(in rail.Context, amount float64, idem string) (string, error) {
+func (c *Connector) buildPain001(in rail.Context, amount decimal.Decimal, idem string) (string, error) {
 	creditor := in.RailSpecific["creditor_name"]
 	creditorIBAN := in.RailSpecific["creditor_iban"]
 	if creditorIBAN == "" {

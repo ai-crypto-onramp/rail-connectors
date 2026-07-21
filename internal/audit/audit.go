@@ -3,18 +3,20 @@ package audit
 import (
 	"sync"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 // Event is a normalized audit event emitted on rail state transitions.
 type Event struct {
-	Type       string         `json:"type"`
-	PaymentID  string         `json:"payment_id"`
-	Rail       string         `json:"rail"`
-	Operation  string         `json:"operation,omitempty"`
-	Status     string         `json:"status,omitempty"`
-	Amount     float64        `json:"amount,omitempty"`
-	OccurredAt time.Time      `json:"occurred_at"`
-	Payload    map[string]any `json:"payload,omitempty"`
+	Type       string          `json:"type"`
+	PaymentID  string          `json:"payment_id"`
+	Rail       string          `json:"rail"`
+	Operation  string          `json:"operation,omitempty"`
+	Status     string          `json:"status,omitempty"`
+	Amount     decimal.Decimal `json:"amount,omitempty"`
+	OccurredAt time.Time       `json:"occurred_at"`
+	Payload    map[string]any  `json:"payload,omitempty"`
 }
 
 // Sink is the interface every audit destination implements. The simplified

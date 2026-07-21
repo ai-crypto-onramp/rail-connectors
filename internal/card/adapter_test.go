@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/shopspring/decimal"
+
 	"github.com/ai-crypto-onramp/rail-connectors/internal/audit"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/rail"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/store"
@@ -58,7 +60,7 @@ func TestCardAuthorizeStripeHappy(t *testing.T) {
 	t.Parallel()
 	c, srv, s, rec := newStripeAdapter(t)
 	defer srv.Close()
-	ctx := rail.Context{PaymentID: "p1", Rail: "card", Amount: 10.0, Currency: "usd", IdempotencyKey: "k1"}
+	ctx := rail.Context{PaymentID: "p1", Rail: "card", Amount: decimal.NewFromFloat(10.0), Currency: "usd", IdempotencyKey: "k1"}
 	resp, err := c.Authorize(context.Background(), ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -85,11 +87,11 @@ func TestCardCaptureStripeHappy(t *testing.T) {
 	t.Parallel()
 	c, srv, s, _ := newStripeAdapter(t)
 	defer srv.Close()
-	ctx := rail.Context{PaymentID: "p2", Rail: "card", Amount: 25.0, Currency: "usd", IdempotencyKey: "k2"}
+	ctx := rail.Context{PaymentID: "p2", Rail: "card", Amount: decimal.NewFromFloat(25.0), Currency: "usd", IdempotencyKey: "k2"}
 	if _, err := c.Authorize(context.Background(), ctx); err != nil {
 		t.Fatal(err)
 	}
-	resp, err := c.Capture(context.Background(), ctx, 25.0)
+	resp, err := c.Capture(context.Background(), ctx, decimal.NewFromFloat(25.0))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -106,14 +108,14 @@ func TestCardRefundStripeHappy(t *testing.T) {
 	t.Parallel()
 	c, srv, _, _ := newStripeAdapter(t)
 	defer srv.Close()
-	ctx := rail.Context{PaymentID: "p3", Rail: "card", Amount: 50.0, Currency: "usd", IdempotencyKey: "k3"}
+	ctx := rail.Context{PaymentID: "p3", Rail: "card", Amount: decimal.NewFromFloat(50.0), Currency: "usd", IdempotencyKey: "k3"}
 	if _, err := c.Authorize(context.Background(), ctx); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := c.Capture(context.Background(), ctx, 50.0); err != nil {
+	if _, err := c.Capture(context.Background(), ctx, decimal.NewFromFloat(50.0)); err != nil {
 		t.Fatal(err)
 	}
-	resp, err := c.Refund(context.Background(), ctx, 20.0)
+	resp, err := c.Refund(context.Background(), ctx, decimal.NewFromFloat(20.0))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,7 +128,7 @@ func TestCardGetStatusStripe(t *testing.T) {
 	t.Parallel()
 	c, srv, _, _ := newStripeAdapter(t)
 	defer srv.Close()
-	ctx := rail.Context{PaymentID: "p4", Rail: "card", Amount: 1.0, Currency: "usd", IdempotencyKey: "k4"}
+	ctx := rail.Context{PaymentID: "p4", Rail: "card", Amount: decimal.NewFromFloat(1.0), Currency: "usd", IdempotencyKey: "k4"}
 	if _, err := c.Authorize(context.Background(), ctx); err != nil {
 		t.Fatal(err)
 	}
@@ -153,7 +155,7 @@ func TestCardCaptureUnknownPayment(t *testing.T) {
 	t.Parallel()
 	c, srv, _, _ := newStripeAdapter(t)
 	defer srv.Close()
-	resp, _ := c.Capture(context.Background(), rail.Context{PaymentID: "ghost"}, 1)
+	resp, _ := c.Capture(context.Background(), rail.Context{PaymentID: "ghost"}, decimal.NewFromInt(1))
 	if resp.ErrorCode != rail.CodeInvalidRequest {
 		t.Fatalf("expected invalid, got %+v", resp)
 	}
@@ -192,7 +194,7 @@ func TestCardDeclineMapping(t *testing.T) {
 		{"do_not_honor", rail.CodeDoNotHonor},
 	} {
 		c, srv := newStripeDeclineAdapter(t, tc.decline)
-		resp, _ := c.Authorize(context.Background(), rail.Context{PaymentID: "p9", Rail: "card", Amount: 1, Currency: "usd", IdempotencyKey: "k"})
+		resp, _ := c.Authorize(context.Background(), rail.Context{PaymentID: "p9", Rail: "card", Amount: decimal.NewFromInt(1), Currency: "usd", IdempotencyKey: "k"})
 		if resp.ErrorCode != tc.wantCode {
 			t.Fatalf("decline %q: got %q want %q", tc.decline, resp.ErrorCode, tc.wantCode)
 		}
@@ -211,7 +213,7 @@ func TestCardServerErrorMapsUnavailable(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp, _ := c.Authorize(context.Background(), rail.Context{PaymentID: "p10", Rail: "card", Amount: 1, Currency: "usd", IdempotencyKey: "k"})
+	resp, _ := c.Authorize(context.Background(), rail.Context{PaymentID: "p10", Rail: "card", Amount: decimal.NewFromInt(1), Currency: "usd", IdempotencyKey: "k"})
 	if resp.ErrorCode != rail.CodeRailUnavailable {
 		t.Fatalf("got %q", resp.ErrorCode)
 	}
@@ -249,7 +251,7 @@ func TestCardAdyenAuthorizeHappy(t *testing.T) {
 	t.Parallel()
 	c, srv, s := newAdyenAdapter(t)
 	defer srv.Close()
-	resp, err := c.Authorize(context.Background(), rail.Context{PaymentID: "pa1", Rail: "card", Amount: 15.0, Currency: "eur", IdempotencyKey: "ka"})
+	resp, err := c.Authorize(context.Background(), rail.Context{PaymentID: "pa1", Rail: "card", Amount: decimal.NewFromFloat(15.0), Currency: "eur", IdempotencyKey: "ka"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -269,11 +271,11 @@ func TestCardAdyenCaptureRefund(t *testing.T) {
 	t.Parallel()
 	c, srv, _ := newAdyenAdapter(t)
 	defer srv.Close()
-	ctx := rail.Context{PaymentID: "pa2", Rail: "card", Amount: 30.0, Currency: "eur", IdempotencyKey: "ka2"}
+	ctx := rail.Context{PaymentID: "pa2", Rail: "card", Amount: decimal.NewFromFloat(30.0), Currency: "eur", IdempotencyKey: "ka2"}
 	if _, err := c.Authorize(context.Background(), ctx); err != nil {
 		t.Fatal(err)
 	}
-	resp, err := c.Capture(context.Background(), ctx, 30.0)
+	resp, err := c.Capture(context.Background(), ctx, decimal.NewFromFloat(30.0))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/shopspring/decimal"
+
 	"github.com/ai-crypto-onramp/rail-connectors/internal/audit"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/metrics"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/rail"
@@ -45,7 +47,7 @@ func upiCtx(pid string) rail.Context {
 	return rail.Context{
 		PaymentID: pid,
 		Rail:      "upi",
-		Amount:    100.0,
+		Amount:    decimal.NewFromInt(100),
 		Currency:  "INR",
 		RailSpecific: map[string]string{
 			"payer_vpa": "alice@upi",
@@ -106,7 +108,7 @@ func TestUPICapturePoll(t *testing.T) {
 	if _, err := c.Authorize(context.Background(), ctx); err != nil {
 		t.Fatal(err)
 	}
-	resp, err := c.Capture(context.Background(), ctx, 100.0)
+	resp, err := c.Capture(context.Background(), ctx, decimal.NewFromInt(100))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -127,7 +129,7 @@ func TestUPIRefund(t *testing.T) {
 	if _, err := c.Authorize(context.Background(), ctx); err != nil {
 		t.Fatal(err)
 	}
-	resp, err := c.Refund(context.Background(), ctx, 50.0)
+	resp, err := c.Refund(context.Background(), ctx, decimal.NewFromInt(50))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -165,11 +167,11 @@ func TestUPIChargeback(t *testing.T) {
 	if _, err := c.Authorize(context.Background(), ctx); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := c.Capture(context.Background(), ctx, 100.0); err != nil {
+	if _, err := c.Capture(context.Background(), ctx, decimal.NewFromInt(100)); err != nil {
 		t.Fatal(err)
 	}
 	before := c.chargeRate.Value()
-	resp, err := c.Chargeback(context.Background(), ctx, 100.0, "CHARGEBACK")
+	resp, err := c.Chargeback(context.Background(), ctx, decimal.NewFromInt(100), "CHARGEBACK")
 	if err != nil {
 		t.Fatal(err)
 	}

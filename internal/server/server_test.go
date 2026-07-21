@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/shopspring/decimal"
+
 	"github.com/ai-crypto-onramp/rail-connectors/internal/audit"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/rail"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/store"
@@ -85,7 +87,7 @@ func TestReadyz(t *testing.T) {
 func TestAuthorizeEndpoint(t *testing.T) {
 	t.Parallel()
 	svc, rec, s := newTestService(t)
-	body := authorizeReq{PaymentID: "p1", Rail: "card", Amount: 12.5, Currency: "USD"}
+	body := authorizeReq{PaymentID: "p1", Rail: "card", Amount: decimal.NewFromFloat(12.5), Currency: "USD"}
 	resp := doRequest(t, svc, http.MethodPost, "/v1/authorize", body, "")
 	if resp.Code != http.StatusOK {
 		t.Fatalf("code = %d body=%s", resp.Code, resp.Body.String())
@@ -139,8 +141,8 @@ func TestAuthorizeFailFlag(t *testing.T) {
 func TestCaptureAndRefundFlow(t *testing.T) {
 	t.Parallel()
 	svc, _, _ := newTestService(t)
-	doRequest(t, svc, http.MethodPost, "/v1/authorize", authorizeReq{PaymentID: "p3", Amount: 50}, "")
-	resp := doRequest(t, svc, http.MethodPost, "/v1/capture/p3", amountReq{Amount: 50}, "")
+	doRequest(t, svc, http.MethodPost, "/v1/authorize", authorizeReq{PaymentID: "p3", Amount: decimal.NewFromInt(50)}, "")
+	resp := doRequest(t, svc, http.MethodPost, "/v1/capture/p3", amountReq{Amount: decimal.NewFromInt(50)}, "")
 	if resp.Code != http.StatusOK {
 		t.Fatalf("capture code = %d body=%s", resp.Code, resp.Body.String())
 	}
@@ -149,7 +151,7 @@ func TestCaptureAndRefundFlow(t *testing.T) {
 	if c.Status != rail.StatusCaptured {
 		t.Fatalf("status = %q", c.Status)
 	}
-	resp = doRequest(t, svc, http.MethodPost, "/v1/refund/p3", amountReq{Amount: 20}, "")
+	resp = doRequest(t, svc, http.MethodPost, "/v1/refund/p3", amountReq{Amount: decimal.NewFromInt(20)}, "")
 	if resp.Code != http.StatusOK {
 		t.Fatalf("refund code = %d body=%s", resp.Code, resp.Body.String())
 	}
@@ -163,7 +165,7 @@ func TestCaptureAndRefundFlow(t *testing.T) {
 func TestCaptureUnknownPayment(t *testing.T) {
 	t.Parallel()
 	svc, _, _ := newTestService(t)
-	resp := doRequest(t, svc, http.MethodPost, "/v1/capture/ghost", amountReq{Amount: 1}, "")
+	resp := doRequest(t, svc, http.MethodPost, "/v1/capture/ghost", amountReq{Amount: decimal.NewFromInt(1)}, "")
 	if resp.Code != http.StatusNotFound {
 		t.Fatalf("code = %d", resp.Code)
 	}
@@ -172,7 +174,7 @@ func TestCaptureUnknownPayment(t *testing.T) {
 func TestStatusEndpoint(t *testing.T) {
 	t.Parallel()
 	svc, _, _ := newTestService(t)
-	doRequest(t, svc, http.MethodPost, "/v1/authorize", authorizeReq{PaymentID: "p4", Amount: 1}, "")
+	doRequest(t, svc, http.MethodPost, "/v1/authorize", authorizeReq{PaymentID: "p4", Amount: decimal.NewFromInt(1)}, "")
 	resp := doRequest(t, svc, http.MethodGet, "/v1/status/p4", nil, "")
 	if resp.Code != http.StatusOK {
 		t.Fatalf("code = %d body=%s", resp.Code, resp.Body.String())
@@ -196,7 +198,7 @@ func TestStatusUnknownPayment(t *testing.T) {
 func TestWebhookHappy(t *testing.T) {
 	t.Parallel()
 	svc, _, s := newTestService(t)
-	doRequest(t, svc, http.MethodPost, "/v1/authorize", authorizeReq{PaymentID: "p5", Amount: 1}, "")
+	doRequest(t, svc, http.MethodPost, "/v1/authorize", authorizeReq{PaymentID: "p5", Amount: decimal.NewFromInt(1)}, "")
 	// Use a recognized status so the webhook updates the store.
 	body := []byte(`{"payment_id":"p5","status":"settled"}`)
 	sig := webhooks.Compute(body, "dev-secret")
@@ -216,7 +218,7 @@ func TestWebhookHappy(t *testing.T) {
 func TestWebhookBadSignature(t *testing.T) {
 	t.Parallel()
 	svc, _, s := newTestService(t)
-	doRequest(t, svc, http.MethodPost, "/v1/authorize", authorizeReq{PaymentID: "p6", Amount: 1}, "")
+	doRequest(t, svc, http.MethodPost, "/v1/authorize", authorizeReq{PaymentID: "p6", Amount: decimal.NewFromInt(1)}, "")
 	body := []byte(`{"payment_id":"p6","status":"settled"}`)
 	req := httptest.NewRequest(http.MethodPost, "/webhooks/card", bytes.NewReader(body))
 	req.Header.Set("X-Webhook-Signature", "deadbeef")
@@ -336,7 +338,7 @@ func TestIntegrationServerRoundTrip(t *testing.T) {
 func TestRefundUnknownPayment(t *testing.T) {
 	t.Parallel()
 	svc, _, _ := newTestService(t)
-	resp := doRequest(t, svc, http.MethodPost, "/v1/refund/ghost", amountReq{Amount: 1}, "")
+	resp := doRequest(t, svc, http.MethodPost, "/v1/refund/ghost", amountReq{Amount: decimal.NewFromInt(1)}, "")
 	if resp.Code != http.StatusNotFound {
 		t.Fatalf("code = %d", resp.Code)
 	}
@@ -345,7 +347,7 @@ func TestRefundUnknownPayment(t *testing.T) {
 func TestRefundBadJSON(t *testing.T) {
 	t.Parallel()
 	svc, _, _ := newTestService(t)
-	doRequest(t, svc, http.MethodPost, "/v1/authorize", authorizeReq{PaymentID: "p9", Amount: 1}, "")
+	doRequest(t, svc, http.MethodPost, "/v1/authorize", authorizeReq{PaymentID: "p9", Amount: decimal.NewFromInt(1)}, "")
 	req := httptest.NewRequest(http.MethodPost, "/v1/refund/p9", strings.NewReader("not-json"))
 	rec := httptest.NewRecorder()
 	svc.Mux().ServeHTTP(rec, req)
@@ -357,7 +359,7 @@ func TestRefundBadJSON(t *testing.T) {
 func TestCaptureBadJSON(t *testing.T) {
 	t.Parallel()
 	svc, _, _ := newTestService(t)
-	doRequest(t, svc, http.MethodPost, "/v1/authorize", authorizeReq{PaymentID: "p10", Amount: 1}, "")
+	doRequest(t, svc, http.MethodPost, "/v1/authorize", authorizeReq{PaymentID: "p10", Amount: decimal.NewFromInt(1)}, "")
 	req := httptest.NewRequest(http.MethodPost, "/v1/capture/p10", strings.NewReader("not-json"))
 	rec := httptest.NewRecorder()
 	svc.Mux().ServeHTTP(rec, req)
@@ -369,7 +371,7 @@ func TestCaptureBadJSON(t *testing.T) {
 func TestCaptureMissingPaymentIDInPath(t *testing.T) {
 	t.Parallel()
 	svc, _, _ := newTestService(t)
-	resp := doRequest(t, svc, http.MethodPost, "/v1/capture/", amountReq{Amount: 1}, "")
+	resp := doRequest(t, svc, http.MethodPost, "/v1/capture/", amountReq{Amount: decimal.NewFromInt(1)}, "")
 	if resp.Code != http.StatusBadRequest {
 		t.Fatalf("code = %d", resp.Code)
 	}
@@ -378,7 +380,7 @@ func TestCaptureMissingPaymentIDInPath(t *testing.T) {
 func TestRefundMissingPaymentIDInPath(t *testing.T) {
 	t.Parallel()
 	svc, _, _ := newTestService(t)
-	resp := doRequest(t, svc, http.MethodPost, "/v1/refund/", amountReq{Amount: 1}, "")
+	resp := doRequest(t, svc, http.MethodPost, "/v1/refund/", amountReq{Amount: decimal.NewFromInt(1)}, "")
 	if resp.Code != http.StatusBadRequest {
 		t.Fatalf("code = %d", resp.Code)
 	}
@@ -396,7 +398,7 @@ func TestStatusMissingPaymentIDInPath(t *testing.T) {
 func TestCaptureEmptyBody(t *testing.T) {
 	t.Parallel()
 	svc, _, _ := newTestService(t)
-	doRequest(t, svc, http.MethodPost, "/v1/authorize", authorizeReq{PaymentID: "p11", Amount: 1}, "")
+	doRequest(t, svc, http.MethodPost, "/v1/authorize", authorizeReq{PaymentID: "p11", Amount: decimal.NewFromInt(1)}, "")
 	req := httptest.NewRequest(http.MethodPost, "/v1/capture/p11", nil)
 	rec := httptest.NewRecorder()
 	svc.Mux().ServeHTTP(rec, req)

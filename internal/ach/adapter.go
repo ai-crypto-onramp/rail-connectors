@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/shopspring/decimal"
+
 	"github.com/ai-crypto-onramp/rail-connectors/internal/ach/bankapi"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/ach/nacha"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/audit"
@@ -122,7 +124,7 @@ func (c *Connector) Authorize(ctx context.Context, in rail.Context) (rail.Respon
 }
 
 // Capture submits a NACHA debit batch for the authorized amount.
-func (c *Connector) Capture(ctx context.Context, in rail.Context, amount float64) (rail.Response, error) {
+func (c *Connector) Capture(ctx context.Context, in rail.Context, amount decimal.Decimal) (rail.Response, error) {
 	if in.PaymentID == "" {
 		return failResp(rail.CodeInvalidRequest, "missing payment_id"), nil
 	}
@@ -171,7 +173,7 @@ func (c *Connector) Capture(ctx context.Context, in rail.Context, amount float64
 }
 
 // Refund submits a reversing NACHA entry for the captured amount.
-func (c *Connector) Refund(ctx context.Context, in rail.Context, amount float64) (rail.Response, error) {
+func (c *Connector) Refund(ctx context.Context, in rail.Context, amount decimal.Decimal) (rail.Response, error) {
 	if in.PaymentID == "" {
 		return failResp(rail.CodeInvalidRequest, "missing payment_id"), nil
 	}
@@ -322,7 +324,15 @@ func mapStatus(s string) rail.Status {
 	}
 }
 
-func toMinor(amount float64) int64 { return int64(amount*100 + 0.5) }
+func toMinor(amount decimal.Decimal) int64 {
+	// truncate to cents, then round to nearest cent
+	cents := amount.Mul(decimal.NewFromInt(100))
+	f, _ := cents.Float64()
+	if f >= 0 {
+		return int64(f + 0.5)
+	}
+	return int64(f - 0.5)
+}
 
 func max1(n int) int {
 	if n < 1 {

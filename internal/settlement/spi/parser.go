@@ -8,23 +8,25 @@ import (
 	"io"
 	"strings"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 // Entry is a single settled entry parsed from an SPI report.
 type Entry struct {
 	PaymentID string
 	Rail      string
-	Amount    float64
+	Amount    decimal.Decimal
 	Currency  string
 	SettledAt time.Time
 	SourceRef string
 }
 
 type rawEntry struct {
-	PaymentID string  `json:"payment_id"`
-	Amount    float64 `json:"amount"`
-	Currency  string  `json:"currency"`
-	SettledAt string  `json:"settled_at"`
+	PaymentID string          `json:"payment_id"`
+	Amount    decimal.Decimal `json:"amount"`
+	Currency  string          `json:"currency"`
+	SettledAt string          `json:"settled_at"`
 }
 
 // Parse parses a JSON SPI settlement report from r.

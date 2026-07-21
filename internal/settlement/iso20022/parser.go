@@ -10,13 +10,15 @@ import (
 	"io"
 	"strings"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 // Entry is a single settled entry parsed from a camt.053/054 message.
 type Entry struct {
 	PaymentID string
 	Rail      string
-	Amount    float64
+	Amount    decimal.Decimal
 	Currency  string
 	SettledAt time.Time
 	SourceRef string
@@ -101,10 +103,12 @@ func entriesFromNtry(n ntry, sourceRef string) []Entry {
 	return out
 }
 
-func parseFloat(s string) float64 {
-	var f float64
-	_, _ = fmt.Sscanf(strings.TrimSpace(s), "%f", &f)
-	return f
+func parseFloat(s string) decimal.Decimal {
+	d, err := decimal.NewFromString(strings.TrimSpace(s))
+	if err != nil {
+		return decimal.Zero
+	}
+	return d
 }
 
 func parseTime(s string) time.Time {

@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/shopspring/decimal"
+
 	"github.com/ai-crypto-onramp/rail-connectors/internal/audit"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/rail"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/sepa/iso20022"
@@ -42,7 +44,7 @@ func sepaCtx(pid string) rail.Context {
 	return rail.Context{
 		PaymentID: pid,
 		Rail:      "sepa",
-		Amount:    100.0,
+		Amount:    decimal.NewFromInt(100),
 		Currency:  "EUR",
 		RailSpecific: map[string]string{
 			"creditor_name": "Bob",
@@ -87,7 +89,7 @@ func TestSEPACapturePain002(t *testing.T) {
 	if _, err := c.Authorize(context.Background(), ctx); err != nil {
 		t.Fatal(err)
 	}
-	resp, err := c.Capture(context.Background(), ctx, 100.0)
+	resp, err := c.Capture(context.Background(), ctx, decimal.NewFromInt(100))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -108,10 +110,10 @@ func TestSEPARefundReverse(t *testing.T) {
 	if _, err := c.Authorize(context.Background(), ctx); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := c.Capture(context.Background(), ctx, 100.0); err != nil {
+	if _, err := c.Capture(context.Background(), ctx, decimal.NewFromInt(100)); err != nil {
 		t.Fatal(err)
 	}
-	resp, err := c.Refund(context.Background(), ctx, 50.0)
+	resp, err := c.Refund(context.Background(), ctx, decimal.NewFromInt(50))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -129,7 +131,7 @@ func TestSEPARejectReason(t *testing.T) {
 	c, srv, _, _ := newTestAdapter(t)
 	defer srv.Close()
 	c.store.Upsert(store.Record{PaymentID: "ps4", Rail: "sepa", Status: rail.StatusAuthorized, RailRef: "RJCT1"})
-	resp, err := c.Capture(context.Background(), rail.Context{PaymentID: "ps4", Currency: "EUR"}, 100.0)
+	resp, err := c.Capture(context.Background(), rail.Context{PaymentID: "ps4", Currency: "EUR"}, decimal.NewFromInt(100))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -188,7 +190,7 @@ func TestSEPACaptureUnknownPayment(t *testing.T) {
 	t.Parallel()
 	c, srv, _, _ := newTestAdapter(t)
 	defer srv.Close()
-	resp, _ := c.Capture(context.Background(), rail.Context{PaymentID: "ghost"}, 1)
+	resp, _ := c.Capture(context.Background(), rail.Context{PaymentID: "ghost"}, decimal.NewFromInt(1))
 	if resp.ErrorCode != rail.CodeInvalidRequest {
 		t.Fatalf("got %+v", resp)
 	}

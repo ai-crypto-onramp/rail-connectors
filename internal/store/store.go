@@ -4,6 +4,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/shopspring/decimal"
+
 	"github.com/ai-crypto-onramp/rail-connectors/internal/rail"
 )
 
@@ -12,7 +14,7 @@ type Record struct {
 	PaymentID      string
 	Rail           string
 	Operation      string
-	Amount         float64
+	Amount         decimal.Decimal
 	Currency       string
 	Status         rail.Status
 	IdempotencyKey string
@@ -28,7 +30,7 @@ type SettleEntry struct {
 	SettleID  string
 	Rail      string
 	PaymentID string
-	Amount    float64
+	Amount    decimal.Decimal
 	Currency  string
 	SettledAt time.Time
 	SourceRef string
@@ -39,7 +41,7 @@ type ChargebackEntry struct {
 	ChargebackID string
 	Rail         string
 	PaymentID    string
-	Amount       float64
+	Amount       decimal.Decimal
 	ReasonCode   string
 	ReceivedAt   time.Time
 	Status       rail.Status
@@ -53,7 +55,7 @@ type Store interface {
 	SetStatus(paymentID string, status rail.Status, code, msg string) bool
 	AddSettle(e SettleEntry)
 	Settles() []SettleEntry
-	SettledAmount(paymentID string) float64
+	SettledAmount(paymentID string) decimal.Decimal
 	All() []Record
 	AddChargeback(e ChargebackEntry) ChargebackEntry
 	Chargebacks() []ChargebackEntry
@@ -64,14 +66,14 @@ type MemStore struct {
 	mu          sync.RWMutex
 	requests    map[string]*Record
 	settles     []SettleEntry
-	settleAmt   map[string]float64
+	settleAmt   map[string]decimal.Decimal
 	chargebacks []ChargebackEntry
 }
 
 func New() *MemStore {
 	return &MemStore{
 		requests:    make(map[string]*Record),
-		settleAmt:   make(map[string]float64),
+		settleAmt:   make(map[string]decimal.Decimal),
 		chargebacks: nil,
 	}
 }
@@ -129,7 +131,7 @@ func (s *MemStore) AddSettle(e SettleEntry) {
 		e.SettleID = "settle-" + e.PaymentID
 	}
 	s.settles = append(s.settles, e)
-	s.settleAmt[e.PaymentID] += e.Amount
+	s.settleAmt[e.PaymentID] = s.settleAmt[e.PaymentID].Add(e.Amount)
 	if r, ok := s.requests[e.PaymentID]; ok {
 		r.Status = rail.StatusSettled
 		r.UpdatedAt = time.Now().UTC()
@@ -146,7 +148,7 @@ func (s *MemStore) Settles() []SettleEntry {
 }
 
 // SettledAmount returns the total settled amount for a payment.
-func (s *MemStore) SettledAmount(paymentID string) float64 {
+func (s *MemStore) SettledAmount(paymentID string) decimal.Decimal {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.settleAmt[paymentID]

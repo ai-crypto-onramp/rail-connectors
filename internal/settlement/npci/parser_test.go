@@ -3,6 +3,8 @@ package npci
 import (
 	"strings"
 	"testing"
+
+	"github.com/shopspring/decimal"
 )
 
 func TestParseWithHeader(t *testing.T) {
@@ -17,7 +19,7 @@ func TestParseWithHeader(t *testing.T) {
 	if len(entries) != 2 {
 		t.Fatalf("len = %d", len(entries))
 	}
-	if entries[0].PaymentID != "pu1" || entries[0].Amount != 100.00 {
+	if entries[0].PaymentID != "pu1" || !entries[0].Amount.Equal(decimal.NewFromInt(100)) {
 		t.Fatalf("entry0 = %+v", entries[0])
 	}
 	if entries[0].SourceRef != "settlement.csv" {

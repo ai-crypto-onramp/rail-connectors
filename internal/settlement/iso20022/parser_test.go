@@ -3,6 +3,8 @@ package iso20022
 import (
 	"strings"
 	"testing"
+
+	"github.com/shopspring/decimal"
 )
 
 const camt053 = `<?xml version="1.0"?>
@@ -57,7 +59,7 @@ func TestParseCamt053(t *testing.T) {
 	if len(entries) != 2 {
 		t.Fatalf("len = %d", len(entries))
 	}
-	if entries[0].PaymentID != "E2E-1" || entries[0].Amount != 100.50 {
+	if entries[0].PaymentID != "E2E-1" || !entries[0].Amount.Equal(decimal.NewFromFloat(100.50)) {
 		t.Fatalf("entry0 = %+v", entries[0])
 	}
 	if entries[0].Currency != "EUR" {

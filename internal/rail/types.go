@@ -4,6 +4,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+
+	"github.com/shopspring/decimal"
 )
 
 // Status represents the normalized lifecycle state of a rail payment.
@@ -34,7 +36,7 @@ func ValidStatus(s Status) bool {
 type Context struct {
 	PaymentID      string            `json:"payment_id"`
 	Rail           string            `json:"rail"`
-	Amount         float64           `json:"amount"`
+	Amount         decimal.Decimal   `json:"amount"`
 	Currency       string            `json:"currency"`
 	PayerRef       string            `json:"payer_ref"`
 	IdempotencyKey string            `json:"idempotency_key,omitempty"`
@@ -44,12 +46,12 @@ type Context struct {
 
 // Response is the normalized output of a rail operation.
 type Response struct {
-	Status       Status   `json:"status"`
-	RailRef      string   `json:"rail_ref,omitempty"`
-	SettleAmount *float64 `json:"settle_amount,omitempty"`
-	ErrorCode    string   `json:"error_code,omitempty"`
-	ErrorMessage string   `json:"error_message,omitempty"`
-	RawResponse  []byte   `json:"raw_response,omitempty"`
+	Status       Status           `json:"status"`
+	RailRef      string           `json:"rail_ref,omitempty"`
+	SettleAmount *decimal.Decimal `json:"settle_amount,omitempty"`
+	ErrorCode    string           `json:"error_code,omitempty"`
+	ErrorMessage string           `json:"error_message,omitempty"`
+	RawResponse  []byte           `json:"raw_response,omitempty"`
 }
 
 // StatusResponse is the shape returned by GET /v1/status.

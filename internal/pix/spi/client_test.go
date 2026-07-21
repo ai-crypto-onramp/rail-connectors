@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/shopspring/decimal"
 )
 
 func TestResolveDICTHappy(t *testing.T) {
@@ -65,7 +67,7 @@ func TestInitiatePaymentHappy(t *testing.T) {
 	}))
 	defer srv.Close()
 	c := New(srv.URL, "k")
-	pr, err := c.InitiatePayment(context.Background(), "idem-1", "E2E1", "123", "acct1", "001", 50.0, "BRL")
+	pr, err := c.InitiatePayment(context.Background(), "idem-1", "E2E1", "123", "acct1", "001", decimal.NewFromInt(50), "BRL")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,7 +99,7 @@ func TestInitiatePaymentReturnCode(t *testing.T) {
 	}))
 	defer srv.Close()
 	c := New(srv.URL, "k")
-	_, err := c.InitiatePayment(context.Background(), "i", "E2E", "d", "a", "b", 1.0, "BRL")
+	_, err := c.InitiatePayment(context.Background(), "i", "E2E", "d", "a", "b", decimal.NewFromInt(1), "BRL")
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -162,7 +164,7 @@ func TestRefundPaymentHappy(t *testing.T) {
 	}))
 	defer srv.Close()
 	c := New(srv.URL, "k")
-	pr, err := c.RefundPayment(context.Background(), "idem-r", "P1", 25.0, "BRL")
+	pr, err := c.RefundPayment(context.Background(), "idem-r", "P1", decimal.NewFromInt(25), "BRL")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 // Document is the root pain.001.001.09 document.
@@ -133,7 +135,7 @@ type Transfer struct {
 	EndToEndID   string
 	CreditorName string
 	CreditorIBAN string
-	Amount       float64
+	Amount       decimal.Decimal
 	Reference    string
 }
 
@@ -146,10 +148,12 @@ func BuildPain001(p Payment) (string, error) {
 	if len(p.Transfers) == 0 {
 		return "", fmt.Errorf("iso20022: no transfers")
 	}
-	var total float64
+	total := decimal.Zero
 	for _, tr := range p.Transfers {
-		total += tr.Amount
+		total = total.Add(tr.Amount)
 	}
+	twoPlaces := decimal.NewFromInt(100)
+	ctrlSum := total.Mul(twoPlaces).String()
 	doc := Document{
 		Xmlns: "urn:iso:std:iso:20022:tech:xsd:pain.001.001.09",
 		CstmrCdtTrfInitn: CstmrCdtTrfInitn{
@@ -157,14 +161,14 @@ func BuildPain001(p Payment) (string, error) {
 				MsgID:    p.MsgID,
 				CreDtTm:  time.Now().UTC().Format(time.RFC3339),
 				NbOfTxs:  fmt.Sprintf("%d", len(p.Transfers)),
-				CtrlSum:  fmt.Sprintf("%.2f", total),
+				CtrlSum:  ctrlSum,
 				InitgPty: Pty{Nm: p.Initiator},
 			},
 			PmtInf: PmtInf{
 				PmtInfID:    orDefault(p.PmtInfID, p.MsgID),
 				PmtMtd:      "TRF",
 				NbOfTxs:     fmt.Sprintf("%d", len(p.Transfers)),
-				CtrlSum:     fmt.Sprintf("%.2f", total),
+				CtrlSum:     ctrlSum,
 				PmtTpInf:    PmtTpInf{SvcLvl: SvcLvl{Cd: "INST"}},
 				ReqdExctnDt: p.ExecutionDate.Format("2006-01-02"),
 				Dbtr:        Party{Nm: p.DebtorName},
@@ -175,7 +179,7 @@ func BuildPain001(p Payment) (string, error) {
 	for _, tr := range p.Transfers {
 		doc.CstmrCdtTrfInitn.PmtInf.CdtTrfTxInf = append(doc.CstmrCdtTrfInitn.PmtInf.CdtTrfTxInf, CdtTrfTxInf{
 			PmtID:    PmtID{EndToEndID: tr.EndToEndID},
-			Amt:      Amt{InstdAmt: InstdAmt{Ccy: p.Currency, V: fmt.Sprintf("%.2f", tr.Amount)}},
+			Amt:      Amt{InstdAmt: InstdAmt{Ccy: p.Currency, V: tr.Amount.StringFixed(2)}},
 			Cdtr:     Party{Nm: tr.CreditorName},
 			CdtrAcct: Acct{ID: AcctID{IBAN: tr.CreditorIBAN}},
 			RmtInf:   RmtInf{Strd: Strd{CdtrRefInf: CdtrRefInf{Ref: tr.Reference}}},

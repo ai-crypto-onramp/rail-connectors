@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/shopspring/decimal"
 
 	"github.com/ai-crypto-onramp/rail-connectors/internal/rail"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/store"
@@ -65,8 +66,8 @@ func (d *DB) Upsert(r store.Record) {
 	  rail=EXCLUDED.rail, operation=EXCLUDED.operation, amount=EXCLUDED.amount, currency=EXCLUDED.currency,
 	  status=EXCLUDED.status, idempotency_key=EXCLUDED.idempotency_key, rail_ref=EXCLUDED.rail_ref,
 	  error_code=EXCLUDED.error_code, error_message=EXCLUDED.error_message, updated_at=EXCLUDED.updated_at`,
-	r.PaymentID, r.Rail, r.Operation, r.Amount, r.Currency, string(r.Status),
-	r.IdempotencyKey, r.RailRef, r.ErrorCode, r.ErrorMessage, r.CreatedAt, r.UpdatedAt)
+		r.PaymentID, r.Rail, r.Operation, r.Amount.String(), r.Currency, string(r.Status),
+		r.IdempotencyKey, r.RailRef, r.ErrorCode, r.ErrorMessage, r.CreatedAt, r.UpdatedAt)
 }
 
 func (d *DB) Get(paymentID string) (store.Record, bool) {
@@ -104,7 +105,7 @@ func (d *DB) AddSettle(e store.SettleEntry) {
 	if _, err := tx.Exec(ctx, `INSERT INTO rail_settlements
 	(settle_id, rail, payment_id, amount, currency, settled_at, source_ref)
 	VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (settle_id) DO NOTHING`,
-		e.SettleID, e.Rail, e.PaymentID, e.Amount, e.Currency, e.SettledAt, e.SourceRef); err != nil {
+		e.SettleID, e.Rail, e.PaymentID, e.Amount.String(), e.Currency, e.SettledAt, e.SourceRef); err != nil {
 		return
 	}
 	if _, err := tx.Exec(ctx, `UPDATE rail_requests SET status=$2, updated_at=now() WHERE payment_id=$1`,
@@ -124,22 +125,25 @@ func (d *DB) Settles() []store.SettleEntry {
 	out := []store.SettleEntry{}
 	for rows.Next() {
 		var e store.SettleEntry
-		if err := rows.Scan(&e.SettleID, &e.Rail, &e.PaymentID, &e.Amount, &e.Currency, &e.SettledAt, &e.SourceRef); err != nil {
+		var amt string
+		if err := rows.Scan(&e.SettleID, &e.Rail, &e.PaymentID, &amt, &e.Currency, &e.SettledAt, &e.SourceRef); err != nil {
 			return nil
 		}
+		e.Amount, _ = decimal.NewFromString(amt)
 		out = append(out, e)
 	}
 	return out
 }
 
-func (d *DB) SettledAmount(paymentID string) float64 {
+func (d *DB) SettledAmount(paymentID string) decimal.Decimal {
 	ctx := context.Background()
-	var sum float64
+	var sum string
 	err := d.pool.QueryRow(ctx, `SELECT COALESCE(SUM(amount), 0) FROM rail_settlements WHERE payment_id=$1`, paymentID).Scan(&sum)
 	if err != nil {
-		return 0
+		return decimal.Zero
 	}
-	return sum
+	amt, _ := decimal.NewFromString(sum)
+	return amt
 }
 
 func (d *DB) All() []store.Record {
@@ -179,7 +183,7 @@ func (d *DB) AddChargeback(e store.ChargebackEntry) store.ChargebackEntry {
 	if _, err := tx.Exec(ctx, `INSERT INTO rail_chargebacks
 	(chargeback_id, rail, payment_id, amount, reason_code, received_at, status)
 	VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (chargeback_id) DO NOTHING`,
-		e.ChargebackID, e.Rail, e.PaymentID, e.Amount, e.ReasonCode, e.ReceivedAt, string(e.Status)); err != nil {
+		e.ChargebackID, e.Rail, e.PaymentID, e.Amount.String(), e.ReasonCode, e.ReceivedAt, string(e.Status)); err != nil {
 		return e
 	}
 	if _, err := tx.Exec(ctx, `UPDATE rail_requests SET status=$2, updated_at=now() WHERE payment_id=$1`,
@@ -200,10 +204,11 @@ func (d *DB) Chargebacks() []store.ChargebackEntry {
 	out := []store.ChargebackEntry{}
 	for rows.Next() {
 		var e store.ChargebackEntry
-		var status string
-		if err := rows.Scan(&e.ChargebackID, &e.Rail, &e.PaymentID, &e.Amount, &e.ReasonCode, &e.ReceivedAt, &status); err != nil {
+		var status, amt string
+		if err := rows.Scan(&e.ChargebackID, &e.Rail, &e.PaymentID, &amt, &e.ReasonCode, &e.ReceivedAt, &status); err != nil {
 			return nil
 		}
+		e.Amount, _ = decimal.NewFromString(amt)
 		e.Status = rail.Status(status)
 		out = append(out, e)
 	}
@@ -220,10 +225,11 @@ func (d *DB) ChargebacksFor(paymentID string) []store.ChargebackEntry {
 	out := []store.ChargebackEntry{}
 	for rows.Next() {
 		var e store.ChargebackEntry
-		var status string
-		if err := rows.Scan(&e.ChargebackID, &e.Rail, &e.PaymentID, &e.Amount, &e.ReasonCode, &e.ReceivedAt, &status); err != nil {
+		var status, amt string
+		if err := rows.Scan(&e.ChargebackID, &e.Rail, &e.PaymentID, &amt, &e.ReasonCode, &e.ReceivedAt, &status); err != nil {
 			return nil
 		}
+		e.Amount, _ = decimal.NewFromString(amt)
 		e.Status = rail.Status(status)
 		out = append(out, e)
 	}
@@ -236,11 +242,12 @@ func recordSelectSQL() string {
 
 func scanRecord(row pgx.Row) (store.Record, error) {
 	var r store.Record
-	var status string
-	if err := row.Scan(&r.PaymentID, &r.Rail, &r.Operation, &r.Amount, &r.Currency, &status,
+	var status, amt string
+	if err := row.Scan(&r.PaymentID, &r.Rail, &r.Operation, &amt, &r.Currency, &status,
 		&r.IdempotencyKey, &r.RailRef, &r.ErrorCode, &r.ErrorMessage, &r.CreatedAt, &r.UpdatedAt); err != nil {
 		return store.Record{}, err
 	}
+	r.Amount, _ = decimal.NewFromString(amt)
 	r.Status = rail.Status(status)
 	return r, nil
 }

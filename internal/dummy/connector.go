@@ -7,9 +7,10 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/shopspring/decimal"
 
 	"github.com/ai-crypto-onramp/rail-connectors/internal/audit"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/rail"
@@ -94,7 +95,7 @@ func (c *Connector) Authorize(ctx context.Context, in rail.Context) (rail.Respon
 }
 
 // Capture settles a previously authorized amount.
-func (c *Connector) Capture(ctx context.Context, in rail.Context, amount float64) (rail.Response, error) {
+func (c *Connector) Capture(ctx context.Context, in rail.Context, amount decimal.Decimal) (rail.Response, error) {
 	if in.PaymentID == "" {
 		return rail.Response{Status: rail.StatusFailed, ErrorCode: rail.CodeInvalidRequest, ErrorMessage: "missing payment_id"}, nil
 	}
@@ -126,7 +127,7 @@ func (c *Connector) Capture(ctx context.Context, in rail.Context, amount float64
 }
 
 // Refund returns a captured/settled amount.
-func (c *Connector) Refund(ctx context.Context, in rail.Context, amount float64) (rail.Response, error) {
+func (c *Connector) Refund(ctx context.Context, in rail.Context, amount decimal.Decimal) (rail.Response, error) {
 	if in.PaymentID == "" {
 		return rail.Response{Status: rail.StatusFailed, ErrorCode: rail.CodeInvalidRequest, ErrorMessage: "missing payment_id"}, nil
 	}
@@ -169,7 +170,7 @@ func (c *Connector) GetStatus(ctx context.Context, in rail.Context) (rail.Status
 	return rec.Status, nil
 }
 
-func (c *Connector) emit(in rail.Context, op string, status rail.Status, amount float64) {
+func (c *Connector) emit(in rail.Context, op string, status rail.Status, amount decimal.Decimal) {
 	if c.audit == nil {
 		return
 	}
@@ -188,6 +189,6 @@ func (c *Connector) emit(in rail.Context, op string, status rail.Status, amount 
 }
 
 // FormatAmount is a small helper used by tests to round-trip an amount.
-func FormatAmount(amount float64) string {
-	return strconv.FormatFloat(amount, 'f', 2, 64)
+func FormatAmount(amount decimal.Decimal) string {
+	return amount.String()
 }

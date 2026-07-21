@@ -3,6 +3,8 @@ package spi
 import (
 	"strings"
 	"testing"
+
+	"github.com/shopspring/decimal"
 )
 
 func TestParse(t *testing.T) {
@@ -16,7 +18,7 @@ func TestParse(t *testing.T) {
 	if len(entries) != 2 {
 		t.Fatalf("len = %d", len(entries))
 	}
-	if entries[0].PaymentID != "pp1" || entries[0].Amount != 100.50 {
+	if entries[0].PaymentID != "pp1" || !entries[0].Amount.Equal(decimal.NewFromFloat(100.50)) {
 		t.Fatalf("entry0 = %+v", entries[0])
 	}
 	if entries[0].Currency != "BRL" {

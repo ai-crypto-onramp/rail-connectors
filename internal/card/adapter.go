@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/shopspring/decimal"
+
 	"github.com/ai-crypto-onramp/rail-connectors/internal/audit"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/card/adyen"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/card/stripe"
@@ -134,7 +136,7 @@ func (c *Connector) Authorize(ctx context.Context, in rail.Context) (rail.Respon
 }
 
 // Capture settles a previously authorized amount.
-func (c *Connector) Capture(ctx context.Context, in rail.Context, amount float64) (rail.Response, error) {
+func (c *Connector) Capture(ctx context.Context, in rail.Context, amount decimal.Decimal) (rail.Response, error) {
 	if in.PaymentID == "" {
 		return failResp(rail.CodeInvalidRequest, "missing payment_id"), nil
 	}
@@ -168,7 +170,7 @@ func (c *Connector) Capture(ctx context.Context, in rail.Context, amount float64
 }
 
 // Refund returns captured funds.
-func (c *Connector) Refund(ctx context.Context, in rail.Context, amount float64) (rail.Response, error) {
+func (c *Connector) Refund(ctx context.Context, in rail.Context, amount decimal.Decimal) (rail.Response, error) {
 	if in.PaymentID == "" {
 		return failResp(rail.CodeInvalidRequest, "missing payment_id"), nil
 	}
@@ -312,8 +314,14 @@ func mapRefundStatus(s string) rail.Status {
 	}
 }
 
-func toMinor(amount float64) int64 {
-	return int64(amount*100 + 0.5)
+func toMinor(amount decimal.Decimal) int64 {
+	// truncate to cents, then round to nearest cent
+	cents := amount.Mul(decimal.NewFromInt(100))
+	f, _ := cents.Float64()
+	if f >= 0 {
+		return int64(f + 0.5)
+	}
+	return int64(f - 0.5)
 }
 
 func max1(n int) int {

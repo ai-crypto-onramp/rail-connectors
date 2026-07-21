@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/shopspring/decimal"
+
 	"github.com/ai-crypto-onramp/rail-connectors/internal/audit"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/rail"
 	"github.com/ai-crypto-onramp/rail-connectors/internal/store"
@@ -47,7 +49,7 @@ func pixCtx(pid string) rail.Context {
 	return rail.Context{
 		PaymentID: pid,
 		Rail:      "pix",
-		Amount:    100.0,
+		Amount:    decimal.NewFromInt(100),
 		Currency:  "BRL",
 		PayerRef:  "12345678901",
 		RailSpecific: map[string]string{
@@ -108,7 +110,7 @@ func TestPIXCapturePoll(t *testing.T) {
 	if _, err := c.Authorize(context.Background(), ctx); err != nil {
 		t.Fatal(err)
 	}
-	resp, err := c.Capture(context.Background(), ctx, 100.0)
+	resp, err := c.Capture(context.Background(), ctx, decimal.NewFromInt(100))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -129,7 +131,7 @@ func TestPIXRefund(t *testing.T) {
 	if _, err := c.Authorize(context.Background(), ctx); err != nil {
 		t.Fatal(err)
 	}
-	resp, err := c.Refund(context.Background(), ctx, 50.0)
+	resp, err := c.Refund(context.Background(), ctx, decimal.NewFromInt(50))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -181,7 +183,7 @@ func TestPIXAuthorizeReturnCode(t *testing.T) {
 	ctx := rail.Context{
 		PaymentID: "pp6",
 		Rail:      "pix",
-		Amount:    100.0,
+		Amount:    decimal.NewFromInt(100),
 		Currency:  "BRL",
 		RailSpecific: map[string]string{
 			"pix_key": "bad@example.com",
